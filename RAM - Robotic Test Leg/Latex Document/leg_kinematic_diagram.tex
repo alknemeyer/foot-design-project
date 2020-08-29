@@ -1,0 +1,26 @@
+\documentclass{standalone}
+\usepackage{tikz}
+\usetikzlibrary{quotes,angles,arrows}
+\begin{document}
+\begin{tikzpicture}[scale=0.5]
+	\draw[thick,->] (0,0) -- (15,0) node[anchor=north west] {x} coordinate (x);
+	\draw[thick,->] (0,0) -- (0,31) node[anchor=south east] {y} coordinate (y);
+	
+	\draw[-*] (0,0) coordinate (o)
+	-- node[below] {$l_1$} (13.067,4.279) coordinate (b)
+	-- node[right] {$l_2$} (4.154,27.635) coordinate (c);
+	
+	\draw[-*] (0,0) coordinate (d)
+	-- node[below] {$l_1$} (-11.232,7.931) coordinate (e)
+	-- node[left] {$l_2$} (4.154,27.635) node[left] {$(x'_e, y'_e)$}
+	-- node[left] {$l_3$} (6,30) coordinate (g) node[right] {$(x_e, y_e)$};
+	\draw[dashed, red] (0,0) -- node[right] {$r$} (6,30);
+	\draw[dashed, red] (0,0) -- node[left] {$r'$} (4.154,27.635);
+	
+	\draw pic["$\lambda$",draw,<->,angle eccentricity=1.1,angle radius=2cm] {angle=c--o--e};
+	\draw pic["$\theta_1$",draw,<->,angle eccentricity=1.2,angle radius=1cm] {angle=x--o--e};
+	\draw pic["$\theta_2$",draw,<->,angle eccentricity=1.2,angle radius=2cm] {angle=x--o--b};
+	\draw[red] pic["$\phi$",draw,<->,angle eccentricity=1.1,angle radius=4cm] {angle=x--o--g};
+	\draw[red] pic["$\phi'$",draw,<->,angle eccentricity=1.1,angle radius=3cm] {angle=x--o--c};
+\end{tikzpicture}
+\end{document}
