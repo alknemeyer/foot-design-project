@@ -71,19 +71,20 @@ Afterwards, open [./controller/hopper_code.ino](./controller/hopper_code.ino) an
 | Microcontroller  | [teensy 4.0](https://www.pjrc.com/store/teensy40.html)              |
 | Motor controller | [ODrive](https://odriverobotics.com/)                               |
 | Motor x2         | [T-motor U-10 80rpm/V](http://store-en.tmotor.com/goods.php?id=362) |
-| Motor encoder x2 | [HEDL-5640-A13](https://www.mouser.co.za/ProductDetail/Broadcom-Avago/HEDL-5640A13?qs=RuhU64sK2%252Bv3nPu5sOD%2FhQ==)
+| Motor encoder x2 | [HEDL-5640-A13](https://www.mouser.co.za/ProductDetail/Broadcom-Avago/HEDL-5640A13?qs=RuhU64sK2%252Bv3nPu5sOD%2FhQ==) |
+| Force sensor     | [OptoForce OMD-45-FH-2000N](http://schlu.com/pdf/Optoforce_Sensore_di_forza_3D_OMD-45-FH-2000N_1.5_EN.pdf) |
 <!-- | Encoder          | [E6B2-CWZ3E](https://www.ia.omron.com/data_pdf/cat/e6b2-c_ds_e_6_1_csm491.pdf) | -->
-|                  |                                                                     |
 
 ### Wiring things together
 
 The general setup is:
 * laptop <-> teensy via USB connection
 * teensy <-> ODrive via two Rx/Tx wires [%]
-<!-- * teensy <-> yaw/pitch encoder via four A/B encoder wires, passing through a logic level converter [%] (not used while on vertical rail -- only boom) -->
 * ODrive <-> motor encoders via premade connectors. See below
 * ODrive <-> motors. Each motor has three thick wires which must be directly connected to the ODrive
 * ODrive <-> shunt resistor, plugged into ODrive "AUX" port. I can't remember how to do the calculation for the required resistance/power, unfortunately!
+* laptop <-> OptoForce via USB connection
+<!-- * teensy <-> yaw/pitch encoder via four A/B encoder wires, passing through a logic level converter [%] (not used while on vertical rail -- only boom) -->
 
 [%] = see [./controller/hopper_code.ino](./controller/hopper_code.ino) for pin numbers. I don't want to document them here and then have things go out of sync
 
