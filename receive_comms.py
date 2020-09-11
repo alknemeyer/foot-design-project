@@ -3,7 +3,7 @@ import csv, numpy as np, serial, time
 
 data: List[List[float]] = []
 
-with serial.serialposix.Serial('/dev/ttyACM1', 115200, timeout=1) as ser:
+with serial.Serial('/dev/ttyACM1', 115200, timeout=1) as ser:
     print('waiting for start', end='')
     while ser.readline().decode().rstrip() != 'global_yaw,global_pitch':
         print('.', end='')
