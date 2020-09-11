@@ -51,7 +51,13 @@ If you can modify the sketch to various blink rates and upload it, you're almost
 
 I also install the arduino extension from Microsoft, which can be installed quickly by launching VS Code Quick Open (Ctrl + P), typing `ext install vscode-arduino`, and then pressing enter.
 
-Finally, install ODrive arduino as an arduino library, as described on their [github page](https://github.com/madcowswe/ODrive/tree/devel/Arduino/ODriveArduino). Afterwards, open [hopper_code/hopper.ino](hopper_code/hopper.ino) and click `upload`. If you get an error saying something like `fatal error: ODriveArduino.h: No such file or directory`, then you didn't install the ODrive arduino library properly
+Finally, install ODrive arduino as an arduino library, as described on their [github page](https://github.com/madcowswe/ODrive/tree/devel/Arduino/ODriveArduino). To get the files, you'll need to clone their repository:
+
+```bash
+$ git clone https://github.com/madcowswe/ODrive.git
+```
+
+Afterwards, open [hopper_code/hopper.ino](hopper_code/hopper.ino) and click `upload`. If you get an error saying something like `fatal error: ODriveArduino.h: No such file or directory`, then you didn't install the ODrive arduino library properly
 
 ## The robot
 
