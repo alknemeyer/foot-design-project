@@ -1,5 +1,8 @@
 # ODrive documentation etc
 
+## TODO:
+* need to remember how to get trajectory optimization stuff set up + document that
+
 <!-- source-conda && conda activate foot-design && odrivetool -->
 
 ## Quick doc links:
@@ -7,7 +10,7 @@
 * [ascii-protocol](https://docs.odriverobotics.com/ascii-protocol.html)
 * [ODriveArduino.cpp](https://github.com/madcowswe/ODrive/blob/master/Arduino/ODriveArduino/ODriveArduino.cpp)
 
-## Set up environment
+## Software environment setup
 
 ### Python
 Install conda or miniconda, then:
@@ -65,10 +68,63 @@ Afterwards, open [hopper_code/hopper.ino](hopper_code/hopper.ino) and click `upl
 
 | Item             | Name                                                                |
 | ---------------- | ------------------------------------------------------------------- |
+| Microcontroller  | [teensy 4.0](https://www.pjrc.com/store/teensy40.html)              |
 | Motor controller | [ODrive](https://odriverobotics.com/)                               |
-| Motor            | [T-motor U-10 80rpm/V](http://store-en.tmotor.com/goods.php?id=362) |
-| Encoder          | [E6B2-CWZ3E](https://www.ia.omron.com/data_pdf/cat/e6b2-c_ds_e_6_1_csm491.pdf) |
+| Motor x2         | [T-motor U-10 80rpm/V](http://store-en.tmotor.com/goods.php?id=362) |
+| Motor encoder x2 | [HEDL-5640-A13](https://www.mouser.co.za/ProductDetail/Broadcom-Avago/HEDL-5640A13?qs=RuhU64sK2%252Bv3nPu5sOD%2FhQ==)
+<!-- | Encoder          | [E6B2-CWZ3E](https://www.ia.omron.com/data_pdf/cat/e6b2-c_ds_e_6_1_csm491.pdf) | -->
 |                  |                                                                     |
+
+### Wiring things together
+
+The general setup is:
+* laptop <-> teensy via USB connection
+* teensy <-> ODrive via two Rx/Tx wires [%]
+<!-- * teensy <-> yaw/pitch encoder via four A/B encoder wires, passing through a logic level converter [%] (not used while on vertical rail -- only boom) -->
+* ODrive <-> motor encoders via premade connectors. See below
+* ODrive <-> motors. Each motor has three thick wires which must be directly connected to the ODrive
+* ODrive <-> shunt resistor, plugged into ODrive "AUX" port. I can't remember how to do the calculation for the required resistance/power, unfortunately!
+
+[%] = see hopper_code/hopper_code.ino for pin numbers. I don't want to document them here and then have things go out of sync
+
+#### ODrive <-> motor encoders
+The encoder has pins as follows:
+
+1. NC (no connection)
+2. +5V
+3. GND
+4. NC
+5. not(A)
+6. A
+7. not(B)
+8. B
+9. not(I)
+10. I (index, aka Z)
+
+When looking at the connector, they correspond to the diagram below, where crosses over numbers indicates pins which aren't connected:
+
+<img src="diagrams/motor-encoder-wiring.jpeg" alt="motor encoder wiring diagram" width="200" style="display:block; margin:auto;"/>
+
+_Fig. 1_
+
+Now, the connection works as follows:
+
+<img src="diagrams/motor-encoder-odrive-wiring.jpeg" alt="photo of connection between motor encoder and ODrive" width="400" style="display:block; margin:auto;"/>
+
+_Fig. 2_
+
+Note that the second line from the left (ground, as shown by Fig. 1) crosses over the lines and ends up at the ground pin of the ODrive. When looking at the robot from the front, the left motor is motor 0 (M0)
+
+<!-- #### Setting up encoder
+
+| Wire   | Function            |
+| ------ | ------------------- |
+| Brown  | Input power (5-12V) |
+| Black  | Phase A output      |
+| White  | Phase B output      |
+| Orange | Phase Z output      |
+| Blue   | 0V                  |
+| Shield | GND                 | -->
 
 ### Setting up parameters with python:
 Values from T-motor link above. Plug in the motors before entering entering the code below
@@ -254,22 +310,6 @@ From the [ODrive troubleshooting](https://docs.odriverobotics.com/troubleshootin
 >>> dump_errors(odrv0)       # show errors
 >>> dump_errors(odrv0, True) # show errors and then clear em
 ```
-
-## Interfacing with arduino:
-
-[Folder in Github repo](https://github.com/madcowswe/ODrive/tree/master/Arduino/ODriveArduino)
-
-## Setting up encoder
-
-| Wire   | Function            |
-| ------ | ------------------- |
-| Brown  | Input power (5-12V) |
-| Black  | Phase A output      |
-| White  | Phase B output      |
-| Orange | Phase Z output      |
-| Blue   | 0V                  |
-| Shield | GND                 |
-
 
 ## Firmware upgrade issues:
 
