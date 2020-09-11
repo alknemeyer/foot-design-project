@@ -20,6 +20,8 @@ const float waypts_1[] =        {  0.0,  0.0,  0.5, -0.5,  0.0,  0.5 };
 const unsigned long timepts[] = { 1000, 2000, 3000, 4000, 5000, 6000 };
 const unsigned int num_waypts = 6;
 
+// the control loop 
+const unsigned int control_loop_time_ms = 50;
 
 
 // pins *****************************************************
@@ -27,10 +29,10 @@ const unsigned int num_waypts = 6;
 const uint8_t ODRIVE_RX = 0; // odrive GPIO 1 = Tx
 const uint8_t ODRIVE_TX = 1; // odrive GPIO 2 = Rx
 
-const uint8_t ENCODER_YAW_A = 9;
-const uint8_t ENCODER_YAW_B = 10;
-const uint8_t ENCODER_PITCH_A = 11;
-const uint8_t ENCODER_PITCH_B = 12;
+// const uint8_t ENCODER_YAW_A = 9;
+// const uint8_t ENCODER_YAW_B = 10;
+// const uint8_t ENCODER_PITCH_A = 11;
+// const uint8_t ENCODER_PITCH_B = 12;
 
 const uint8_t STOP_BUTTON = 3;
 volatile bool should_stop = false;
@@ -49,15 +51,18 @@ ODriveArduino odrive(odrive_serial);
 
 // Encoder ****************************************************
 // https://www.pjrc.com/teensy/td_libs_Encoder.html
-#include <Encoder.h>
-Encoder global_yaw(ENCODER_YAW_A, ENCODER_YAW_B);
-Encoder global_pitch(ENCODER_PITCH_A, ENCODER_PITCH_B);
+// #include <Encoder.h>
+// Encoder global_yaw(ENCODER_YAW_A, ENCODER_YAW_B);
+// Encoder global_pitch(ENCODER_PITCH_A, ENCODER_PITCH_B);
+
+// this is how you'd read the encoders and log to serial:
+// Serial << global_yaw.read()/4096.0f << ',' << global_pitch.read()/4096.0f << '\n';
 
 
 // vs code arduino complains about not knowing what serial is otherwise
-#ifdef USBCON
-#define Serial Serial1
-#endif
+// #ifdef USBCON
+// #define Serial Serial1
+// #endif
 
 // setup ******************************************************
 void setup() {
@@ -84,7 +89,7 @@ void setup() {
   Serial << "global_yaw,global_pitch" << '\n';
 
   // TODO: replace delay with waiting for a button event or something?
-  delay(0.5);
+  delay((uint32_t) 1000);
 
   odrive.SetPosition(motor_0, rad2motorpos(waypts_0[0]), 1024.0f);
   odrive.SetPosition(motor_1, rad2motorpos(waypts_1[0]), 1024.0f);
@@ -95,9 +100,6 @@ void loop() {
   static unsigned int ptr = 0;             // pointer into waypts
   static unsigned long t_start = millis(); // time since first loop
   unsigned long t_loop_start = millis();   // time since loop started
-  
-  // read encoders and log to serial
-  //Serial << global_yaw.read()/4096.0f << ',' << global_pitch.read()/4096.0f << '\n';
 
   // read esimated motor positions
   odrive_serial << "r axis0.encoder.pos_estimate\n";
@@ -130,10 +132,10 @@ void loop() {
     for (;;) {};
   }
 
-  // 50 Hz control loop - wait for correct time
+  // control loop - wait for correct time
   unsigned int loop_time = millis() - t_loop_start;
-  if (loop_time < 50) {
-    delay(50 - loop_time);
+  if (loop_time < control_loop_time_ms) {
+    delay(control_loop_time_ms - loop_time);
   }
 }
 
@@ -167,19 +169,11 @@ void run_state(int motornum, int requested_state) {
 
 // printing with stream operator
 template<class T> inline Print& operator <<(Print &obj,     T arg) {
-  obj.print(arg);    return obj;
-}
-template<>        inline Print& operator <<(Print &obj, float arg) {
-  obj.print(arg, 4); return obj;
+  obj.print(arg);
+  return obj;
 }
 
-// attic ******************************************************
-/*
-odrive_serial << "r axis" << motor_0 << ".encoder.config.cpr\n";
-Serial << "debug: " << odrive.readInt() << '\n';
-*/
-/*
-  Serial << "Setting to position " << rad2motorpos(waypts_0[ptr])
-          << " via ptr = " << ptr
-          << " and angle = " << waypts_0[ptr] << "rad" << '\n';
-*/
+template<>        inline Print& operator <<(Print &obj, float arg) {
+  obj.print(arg, 4);
+  return obj;
+}

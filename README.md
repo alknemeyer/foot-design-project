@@ -60,7 +60,7 @@ Finally, install ODrive arduino as an arduino library, as described on their [gi
 $ git clone https://github.com/madcowswe/ODrive.git
 ```
 
-Afterwards, open [hopper_code/hopper.ino](hopper_code/hopper.ino) and click `upload`. If you get an error saying something like `fatal error: ODriveArduino.h: No such file or directory`, then you didn't install the ODrive arduino library properly
+Afterwards, open [./controller/hopper_code.ino](./controller/hopper_code.ino) and click `upload`. If you get an error saying something like `fatal error: ODriveArduino.h: No such file or directory`, then you didn't install the ODrive arduino library properly
 
 ## The robot
 
@@ -85,7 +85,7 @@ The general setup is:
 * ODrive <-> motors. Each motor has three thick wires which must be directly connected to the ODrive
 * ODrive <-> shunt resistor, plugged into ODrive "AUX" port. I can't remember how to do the calculation for the required resistance/power, unfortunately!
 
-[%] = see hopper_code/hopper_code.ino for pin numbers. I don't want to document them here and then have things go out of sync
+[%] = see [./controller/hopper_code.ino](./controller/hopper_code.ino) for pin numbers. I don't want to document them here and then have things go out of sync
 
 #### ODrive <-> motor encoders
 The encoder has pins as follows:
