@@ -1,4 +1,4 @@
 {
-    "python.pythonPath": "~/miniconda3/envs/foot-design/bin/python",
+    "python.pythonPath": "/home/alex/miniconda3/envs/foot-design/bin/python",
     "arduino.path": "/home/alex/Projects/foot-design-project/Arduino/arduino-1.8.13/"
 }
