@@ -91,16 +91,15 @@ The general setup is:
 #### ODrive <-> motor encoders
 The encoder has pins as follows:
 
-1. NC (no connection)
-2. +5V
-3. GND
-4. NC
-5. not(A)
-6. A
-7. not(B)
-8. B
-9. not(I)
-10. I (index, aka Z)
+| pin | type   | | pin | type |
+|-----|--------|-|-----|------|
+| 1   | NC     | | 2   | +5V  |
+| 3   | GND    | | 4   | NC   |
+| 5   | not(A) | | 6   | A    |
+| 7   | not(B) | | 8   | B    |
+| 9   | not(I) | | 10  | I    |
+
+where NC = No Connection, and I = Index = Z
 
 When looking at the connector, they correspond to the diagram below, where crosses over numbers indicates pins which aren't connected:
 
@@ -128,76 +127,31 @@ Note that the second line from the left (ground, as shown by Fig. 1) crosses ove
 | Shield | GND                 | -->
 
 ### Setting up parameters with python:
-Values from T-motor link above. Plug in the motors before entering entering the code below
+Values from T-motor link above. Plug in the motors before running the code in `scripts/config_motors.py`. Do either by copy-pasting the code into the `odrivetool` REPL, or just by running:
 
-```python
-def config_motor(ax):
-    # current limit in [A]
-    ax.motor.config.current_lim = 40 # not sure!
-
-    # velocity limit [counts/s]
-    ax.controller.config.vel_limit = 4096*8 # not sure!
-
-    # calibration current [A]
-    # = continuous current when stationary
-    ax.motor.config.calibration_current = 5  # not sure!
-
-    # number of magnet poles in motor divided by two
-    ax.motor.config.pole_pairs = 20
-
-    # motor type
-    ax.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT
-
-    # encoder count per revolution [CPR]
-    # = 4x the pulse per revolution [PPR]
-    ax.encoder.config.cpr = 4*500 # 4*1024= other one, from sticker on encoder
-    ax.encoder.config.mode = ENCODER_MODE_INCREMENTAL
-    ax.encoder.config.use_index = True
-
-    # calibration accuracy. not sure about this one
-    ax.encoder.config.calib_range = 0.05
-
-    # run full calibration sequence
-    import time
-    ax.requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE
-    while ax.current_state != AXIS_STATE_IDLE:
-        time.sleep(0.1)
-    
-    # set startup sequence
-    ax.config.startup_motor_calibration = False
-    ax.config.startup_encoder_index_search = False#True #??????????
-    ax.config.startup_encoder_offset_calibration = False#True #??????????
-    ax.config.startup_closed_loop_control = False  # ????????
-    ax.config.startup_sensorless_control = False
-
-    # save
-    ax.requested_state = AXIS_STATE_IDLE
-    ax.encoder.config.pre_calibrated = True
-    ax.motor.config.pre_calibrated = True
-
-    dump_errors(odrv0)
-
-# brake resistance [Ohm]
-odrv0.config.brake_resistance = 10  # gold one, brown one w/purple wires is 5ohm
-
-config_motor(odrv0.axis0)
-config_motor(odrv0.axis1)
-
-# save config in memory
-odrv0.save_configuration()
-odrv0.reboot()
+```bash
+$ python scripts/config_motors.py
 ```
 
+### Live plotting
 It may be useful to live plot the setpoint vs motor output. Do so using,
 ```python
 start_liveplotter(lambda:[odrv0.axis0.encoder.pos_estimate,
-                          odrv0.axis0.controller.pos_setpoint])
+                          odrv0.axis0.controller.pos_setpoint,
+                          odrv0.axis1.encoder.pos_estimate,
+                          odrv0.axis1.controller.pos_setpoint])
 ```
+You don't need to run that in a new terminal or anything - it runs in the background. Press enter if you don't see the `In [x] :` prompt
 
-[Tuning](https://docs.odriverobotics.com/control.html#Tuning)
+### [Tuning](https://docs.odriverobotics.com/control.html#Tuning)
+
+Run the following code by copy-pasting it into the `odrivetool` REPL, line by line:
+
 ```python
-# setup
+# set ax to odrv0.axis0 or axis1
 ax = odrv0.axis0
+# ax = odrv0.axis1
+
 ax.requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE
 # wait...
 ax.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
@@ -221,6 +175,7 @@ def set_int_gain(bandwidth_hz):
     ax = odrv0.axis0
     vel_gain = ax.controller.config.vel_gain
     ax.controller.config.vel_integrator_gain = 0.5 * bandwidth_hz * vel_gain
+
 set_int_gain(10)
 
 odrv0.save_configuration()
