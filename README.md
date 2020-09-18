@@ -128,7 +128,7 @@ Note that the second line from the left (ground, as shown by Fig. 1) crosses ove
 | Shield | GND                 | -->
 
 ### Setting up parameters with python:
-Values from T-motor link above. Plug in the motors before running the code in `scripts/config_motors.py`. Do either by copy-pasting the code into the `odrivetool` REPL, or just by running:
+Values from T-motor link above. Plug in the motors before running the code in `scripts/config_motors.py`. Do by either copy-pasting the code into the `odrivetool` REPL, or just by running:
 
 ```bash
 $ python scripts/config_motors.py
