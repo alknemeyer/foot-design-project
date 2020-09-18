@@ -1,7 +1,8 @@
-# ODrive documentation etc
+# Foot Design Project
 
 ## TODO:
 * need to remember how to get trajectory optimization stuff set up + document that
+* switch to using laptop (via python) as main controller, use teensy just as sensor logger?
 
 <!-- source-conda && conda activate foot-design && odrivetool -->
 
