@@ -3,3 +3,4 @@ chris-odrive/
 log.csv
 Arduino/
 Optoforce/
+data/raw-opto-log.csv
