@@ -4,3 +4,4 @@ log.csv
 Arduino/
 Optoforce/
 data/raw-opto-log.csv
+scripts/attic.py
