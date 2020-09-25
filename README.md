@@ -19,8 +19,9 @@ Install conda or miniconda, then:
 ```bash
 $ conda create --name foot-design
 $ conda activate foot-design
+$ conda install jupyterlab sympy
 $ conda install pip
-$ python -m pip install odrive
+$ python -m pip install odrive physical-education==0.1.2 pyomo
 # there might be more install instructions for your
 # particular OS: https://docs.odriverobotics.com/
 # eg. on ubuntu, I have to install "udev rules"

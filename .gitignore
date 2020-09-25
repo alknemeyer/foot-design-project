@@ -5,3 +5,4 @@ Arduino/
 Optoforce/
 data/raw-opto-log.csv
 scripts/attic.py
+traj-opt/.ipopt-log.txt
