@@ -20,6 +20,7 @@ Install conda or miniconda, then:
 $ conda create --name foot-design
 $ conda activate foot-design
 $ conda install jupyterlab sympy
+$ conda install -c conda-forge cyipopt  # get ipopt installed the easy way
 $ conda install pip
 $ python -m pip install odrive physical-education==0.1.2 pyomo
 # there might be more install instructions for your
