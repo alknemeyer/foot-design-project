@@ -14,7 +14,7 @@
 ## Software environment setup
 
 ### Python
-Install conda or miniconda, then:
+Install conda or miniconda, then either install dependancies as you want:
 
 ```bash
 $ conda create --name foot-design
@@ -40,6 +40,11 @@ $ odrivetool
 # you'll start every session by activating your conda env
 # and then entering `odrivetool`
 ```
+or start from a conda `environment.yaml` file:
+```bash
+conda env create --file=environment.yaml
+```
+(if you want to create an environment file with eg. new or updated dependancies: `conda env export > environment.yml`)
 
 If using vs code, you'll need to update the `""python.pythonPath"` setting in `.vscode/settings.json` to your actual virtual environment
 
