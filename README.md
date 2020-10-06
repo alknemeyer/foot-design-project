@@ -70,6 +70,13 @@ $ git clone https://github.com/madcowswe/ODrive.git
 
 Afterwards, open [./controller/hopper_code.ino](./controller/hopper_code.ino) and click `upload`. If you get an error saying something like `fatal error: ODriveArduino.h: No such file or directory`, then you didn't install the ODrive arduino library properly
 
+### ODrive
+
+You have a choice now - you can keep the software + firmware versions that are being used at the time of writing (odrive python library + firmware version 0.4.12) or upgrade to a new version. My feeling is that it's better to use the latest version since that's what the docs reflect, what people on forums will most readily help with, and _possibly_ most bug-free
+
+Might need to run `odrivetool dfu` with `sudo`
+
+
 ## The robot
 
 ### Equipment used
