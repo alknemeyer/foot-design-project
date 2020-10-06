@@ -6,7 +6,7 @@ Run as follows:
 Afterwards, use `plot_optoforce.py` to visualize data
 
 Force scale parameters are from:
-    `OptoForce/SensitivityReport-PFH0A052.pdf`
+    `OptoForce/Sensor datasheet/SensitivityReport-PFH0A052.pdf`
 
 Comms stuff is from:
     `OpfoForce/Interfaces and Softwares/USB/_Protocol description/OptoForce General DAQ - USB,CAN,UART - v1.7.pdf`
@@ -76,6 +76,5 @@ with open('data/raw-opto-log.csv', 'w+') as outfile, \
         fz *= FZ_SCALE
         # print(f'count={count:2}, status={status:2}, fx={fx: 8.3f} fy={fy: 8.3f} fz={fz: 8.3f}')
 
-        # outfile.write()
         t = datetime.now().strftime('%H:%M:%S:%f')
         outfile.write(f'{t},{fx},{fy},{fz}\n')
