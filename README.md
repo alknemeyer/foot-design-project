@@ -1,8 +1,19 @@
 # Foot Design Project
 
 ## TODO:
-* need to remember how to get trajectory optimization stuff set up + document that
-* switch to using laptop (via python) as main controller, use teensy just as sensor logger?
+<!-- * average angle of leg change must be in [-180, 180] -->
+* check if the loose encoder can be tightened/fixed somehow. If broken, buy/find a new one
+<!-- * spend max 1 hour trying to get the index signal working (by scoping signals, inverting, or setting `ax.encoder.config.pre_calibrated = False`) but otherwise just start from known position -->
+<!-- * check that my new much-more-careful code to convert between angles and encoder counts works -->
+* check that the made-up gains I set for bouncy landings works
+* hop using 10kW supply
+* 
+
+Then:
+* get height sensor (LIDAR) working by feeding input to teensy which passes it on to my laptop via USB. KF?
+* attach force sensor to plates so that it doesn't move + it's easier to land on
+* attach a squash ball as a foot
+* test out with 10kW supply + adjust gains if need be
 
 <!-- source-conda && conda activate foot-design && odrivetool -->
 
@@ -74,7 +85,7 @@ Afterwards, open [./controller/hopper_code.ino](./controller/hopper_code.ino) an
 
 You have a choice now - you can keep the software + firmware versions that are being used at the time of writing (odrive python library + firmware version 0.4.12) or upgrade to a new version. My feeling is that it's better to use the latest version since that's what the docs reflect, what people on forums will most readily help with, and _possibly_ most bug-free
 
-Might need to run `odrivetool dfu` with `sudo`
+Might need to run `odrivetool dfu` with `sudo`! You'll know if you get a bug about `ValueError: The device has no langid`
 
 
 ## The robot
@@ -197,74 +208,6 @@ odrv0.save_configuration()
 odrv0.reboot()
 ```
 
-After configuring the motor, do some position control:
-```python
-import time
-ax = odrv0.axis0
-ax = odrv0.axis1
-
-# for encoders without an index signal
-# ax.requested_state = (
-#     AXIS_STATE_ENCODER_OFFSET_CALIBRATION
-# )
-# while ax.current_state != AXIS_STATE_IDLE:
-#     time.sleep(0.1)
-
-# for encoders with an index signal
-ax.requested_state = AXIS_STATE_ENCODER_INDEX_SEARCH
-while ax.current_state != AXIS_STATE_IDLE:
-    time.sleep(0.1)
-
-dump_errors(odrv0)
-#odrv0.axis0.error   # should be 0
-#odrv0.axis0.encoder.config.offset  # should print a number
-#odrv0.axis0.motor.config.direction  # should print 1 or -1
-
-ax.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
-ax.controller.config.control_mode = CTRL_MODE_POSITION_CONTROL
-dump_errors(odrv0)
-
-zero = ax.encoder.config.offset
-ax.controller.pos_setpoint = zero + 250
-time.sleep(1)
-ax.controller.pos_setpoint = zero + 500
-time.sleep(1)
-ax.controller.pos_setpoint = zero + 750
-time.sleep(1)
-ax.controller.pos_setpoint = zero
-time.sleep(1)
-
-ax.requested_state = AXIS_STATE_IDLE
-```
-
-```python
-# a full test
-import time
-for ax in [odrv0.axis0, odrv0.axis1]:
-    ax.requested_state = AXIS_STATE_ENCODER_INDEX_SEARCH
-    while ax.current_state != AXIS_STATE_IDLE:
-        time.sleep(0.1)
-dump_errors(odrv0)
-
-for ax in [odrv0.axis0, odrv0.axis1]:
-    ax.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
-    ax.controller.config.control_mode = CTRL_MODE_POSITION_CONTROL
-dump_errors(odrv0)
-
-import math, time, sys
-i = 0
-while True:
-    i += 1
-    pt = math.fabs(200*math.sin(math.radians(10*i)))
-    for ax in [odrv0.axis0, odrv0.axis1]:
-        offset = ax.encoder.config.offset
-        ax.controller.pos_setpoint = offset + pt
-    
-    #print((pt, i), end=' '); sys.stdout.flush()
-    print('.', end=''); sys.stdout.flush()
-    time.sleep(0.1)
-```
-
 ### Optional nicer print for `odrv0.reboot()`:
 ```python
 from fibre.protocol import ChannelBrokenException
@@ -281,15 +224,3 @@ From the [ODrive troubleshooting](https://docs.odriverobotics.com/troubleshootin
 >>> dump_errors(odrv0)       # show errors
 >>> dump_errors(odrv0, True) # show errors and then clear em
 ```
-
-## Firmware upgrade issues:
-
-* [Issues with Device Firmware Upgrade (DFU)](https://github.com/madcowswe/ODrive/issues/179)
-* Related: [ValueError: The device has no langid](https://github.com/pyusb/pyusb/issues/139). Fix is to run as superuser
-
-
-## CAN interface:
-
-* [Announcement thread](https://discourse.odriverobotics.com/t/can-interface-available-for-testing/1448)
-* [Github fork](https://github.com/Wetmelon/ODrive/tree/feature/CAN)
-* [Protocol (more likely up to date than thread?)](https://github.com/Wetmelon/ODrive/blob/feature/CAN/docs/can-protocol.md)
