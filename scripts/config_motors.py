@@ -64,6 +64,15 @@ def config_motor(ax: 'odrive.Axis'):
     dump_errors(odrv0)
 
 
+# reboot first, to make sure we don't save other random settings on the device
+print('finding and rebooting odrive...')
+odrv0 = odrive.find_any()
+assert odrv0 is not None, "Couldn't find the odrive"
+try:
+    odrv0.reboot()
+except ChannelBrokenException:
+    pass
+
 print('finding odrive...')
 odrv0 = odrive.find_any()
 assert odrv0 is not None, "Couldn't find the odrive"
