@@ -1,13 +1,16 @@
 """
-    $ ipython
-    >>> %load_ext autoreload
-    >>> %autoreload 2
-    >>> from scripts import lib
+ax0 = left motor (when looking from front)
+    = right/front leg (same view)
+    decreasing setpoint (neg) -> clockwise
+
+ax1 = right motor (when looking from front)
+    = left/back leg (same view)
+    increasing setpoint (pos) -> clockwise
 """
-import odrive
+import time
 from odrive.enums import *
 from odrive.utils import dump_errors
-from typing import Tuple, TYPE_CHECKING
+from typing import Literal, Optional, Tuple, TYPE_CHECKING
 import math
 
 if TYPE_CHECKING:
@@ -35,6 +38,9 @@ class PositionControl:
             ax.requested_state = AXIS_STATE_IDLE
 
         dump_errors(self.odrv, clear=True)
+
+
+#=#=#=#=#=#=#=#=# CONVERSION #=#=#=#=#=#=#=#=#
 
 
 def foot_xy_to_th_deg(x_m: float, y_m: float) -> Tuple[float, float]:
@@ -111,6 +117,16 @@ def leg_angle_deg_to_encoder_count(angle_deg: float) -> float:
     return gear_ratio * motor_angle_deg_to_encoder_count(angle_deg)
 
 
+# If eg. two of the motor wires get swapped for one of the motors,
+# the direction of rotation would change (unless ODrive accounts
+# for that?). You could account for this in code by eg. changing
+# one of the functions below to return +x
+def l_dir(x: float): return -x
+def r_dir(x: float): return -x
+
+
+#=#=#=#=#=#=#=#=# GAINS #=#=#=#=#=#=#=#=#
+
 def set_gains(odrv0: 'ODrive',
               vel_scale: float = 1,
               pos_scale: float = 1,
@@ -179,3 +195,80 @@ def nearest_cpr(curr: float, dest: float) -> float:
     assert -lim/2 <= (dest - n*lim) - curr <= lim/2, \
         f"Couldn't get nearest cpr! args: {curr=} {dest=}"
     return dest - n*lim
+
+
+#=#=#=#=#=#=#=#=# ZEROING MOTORS #=#=#=#=#=#=#=#=#
+
+# first approximation -- do it using index
+th0, th1 = foot_xy_to_th_deg(x_m=0.417, y_m=0)
+almost_zero_deg = (-853.765625, -1489.765625)  # TODO: update!
+ZERO_DEG_POS = (
+    almost_zero_deg[0] - r_dir(leg_angle_deg_to_encoder_count(th0)),
+    almost_zero_deg[1] - l_dir(leg_angle_deg_to_encoder_count(th1)),
+)
+del th0, th1, almost_zero_deg
+
+
+def zero_motors_no_index(odrv0: 'ODrive'):
+    almost_straight_down = (
+        odrv0.axis0.encoder.pos_estimate,
+        odrv0.axis1.encoder.pos_estimate,
+    )
+    # zero deg = right
+    th0, th1 = foot_xy_to_th_deg(x_m=0, y_m=-0.417)
+    global ZERO_DEG_POS
+    ZERO_DEG_POS = (
+        almost_straight_down[0] - r_dir(leg_angle_deg_to_encoder_count(th0)),
+        almost_straight_down[1] - l_dir(leg_angle_deg_to_encoder_count(th1)),
+    )
+
+    # above is a slightly more accurate version of:
+    # ZERO_DEG_POS = (
+    #     almost_straight_down[0] - encoder_cpr//2,
+    #     almost_straight_down[1] - encoder_cpr//2,
+    # )
+
+
+#=#=#=#=#=#=#=#=# ACTUALLY MOVING TO POSITIONS #=#=#=#=#=#=#=#=#
+
+def set_to_nearest_angle(odrv0: 'ODrive',
+                         th: float,
+                         motornum: int,
+                         vel_limit: Optional[float] = None):
+    ax = odrv0.axis0 if motornum == 0 else odrv0.axis1
+
+    # ax.controller.pos_setpoint would be more repeatable?
+    curr = ax.encoder.pos_estimate
+    dest = ZERO_DEG_POS[motornum] + r_dir(leg_angle_deg_to_encoder_count(th))
+    dest_nearest = nearest_cpr(curr=curr, dest=dest)
+
+    # print(f'{th=} {curr=} {dest=} {dest_nearest=}')
+    if vel_limit is None:
+        ax.controller.pos_setpoint = dest_nearest
+    else:
+        # https://github.com/madcowswe/ODrive/blob/fw-v0.4.12/docs/getting-started.md#trajectory-control
+        deg2count = leg_angle_deg_to_encoder_count
+        ax.trap_traj.config.vel_limit = deg2count(vel_limit)
+        ax.trap_traj.config.accel_limit = deg2count(vel_limit/3)
+        ax.trap_traj.config.decel_limit = deg2count(vel_limit/3)
+        ax.controller.move_to_pos(dest_nearest)
+
+
+def set_foot_position(odrv0: 'ODrive', x_m: float, y_m: float,
+                      gains: Literal['slow', 'medium', 'fast'],
+                      vel_limit: Optional[float] = None,
+                      sleep: float = 0.):
+    assert odrv0 is not None
+    if gains == 'slow':
+        slow_gains(odrv0)
+    elif gains == 'medium':
+        medium_gains(odrv0)
+    else:
+        fast_gains(odrv0)
+
+    th0, th1 = foot_xy_to_th_deg(x_m=x_m, y_m=y_m)
+    set_to_nearest_angle(odrv0, th0, motornum=0, vel_limit=vel_limit)
+    set_to_nearest_angle(odrv0, th1, motornum=1, vel_limit=vel_limit)
+
+    if sleep > 0:
+        time.sleep(sleep)
