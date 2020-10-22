@@ -1,0 +1,3 @@
+[submodule "height-estimator/lib/BasicLinearAlgebra"]
+	path = height-estimator/lib/BasicLinearAlgebra
+	url = https://github.com/tomstewart89/BasicLinearAlgebra

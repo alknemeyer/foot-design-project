@@ -1,6 +1,6 @@
 #include <BasicLinearAlgebra.h>
 #include <QuadEncoder.h>
-#include <TeenHeadAlex.h>
+#include <TeenHead.h>
 #include <math.h>
 
 
@@ -12,6 +12,7 @@ void wait_control_loop();
 void run_controller();
 void horzontal_controller();
 void testPos();
+
 //-------------------------------------control loop variables----------------------------------------
 #define loopTime 500 // Gives control loop 2kHz Frequency
 unsigned long previousTime = 0;
@@ -23,6 +24,7 @@ bool dead = false;
 
 int MotorCnt = 0;
 float motorPosition;
+
 //-------------------------------------------------------------------------------------
 //----------------------------------SetUp Functions------------------------------------
 //-------------------------------------------------------------------------------------
@@ -86,6 +88,7 @@ void loop() {
   //-------------------Run KalmanFilter--------------------------
   predictKF();
   updateKF(ReadStat);
+
   //----------------------Controller-----------------------------
   // check if control killed:
   if (digitalRead(KILL) == LOW) {

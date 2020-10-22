@@ -7,7 +7,7 @@ using namespace BLA;
 
 #define PPR 4096
 #define XConversion 0.64
-#define LBoom 2.045
+#define LBoom 2.045 // TODO: update to actual length!
 
 #define loopTime 500
 
@@ -95,6 +95,7 @@ void setup_encoders() {
   boom_X_enc.EncConfig.positionInitialValue = 0;
   boom_X_enc.init();
 }
+
 void get_encoder_values(float deltaT) {
   // get encoder values
   boom_X_old_pos = boom_X_current_pos;
@@ -277,6 +278,7 @@ void predictKF() {
   Q = Q * daTemp; // dAmax;
   P_bar += Q;
 }
+
 void updateKF(int dat) {
   //--------------------------------Update------------------------------
   BLA::Matrix<3, 3> Eye3 = {1, 0, 0, 0, 1, 0, 0, 0, 1};
