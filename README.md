@@ -1,20 +1,5 @@
 # Foot Design Project
 
-## TODO:
-<!-- * average angle of leg change must be in [-180, 180] -->
-* check if the loose encoder can be tightened/fixed somehow. If broken, buy/find a new one
-<!-- * spend max 1 hour trying to get the index signal working (by scoping signals, inverting, or setting `ax.encoder.config.pre_calibrated = False`) but otherwise just start from known position -->
-<!-- * check that my new much-more-careful code to convert between angles and encoder counts works -->
-* check that the made-up gains I set for bouncy landings works
-* hop using 10kW supply
-* 
-
-Then:
-* get height sensor (LIDAR) working by feeding input to teensy which passes it on to my laptop via USB. KF?
-* attach force sensor to plates so that it doesn't move + it's easier to land on
-* attach a squash ball as a foot
-* test out with 10kW supply + adjust gains if need be
-
 <!-- source-conda && conda activate foot-design && odrivetool -->
 
 ## Quick doc links:
@@ -34,6 +19,7 @@ $ conda install jupyterlab sympy
 $ conda install -c conda-forge cyipopt  # get ipopt installed the easy way
 $ conda install pip
 $ python -m pip install odrive physical-education==0.1.2 pyomo
+$ python -m pip install --upgrade https://github.com/alknemeyer/optoforce/tarball/main
 # there might be more install instructions for your
 # particular OS: https://docs.odriverobotics.com/
 # eg. on ubuntu, I have to install "udev rules"
@@ -158,6 +144,9 @@ Values from T-motor link above. Plug in the motors before running the code in `s
 ```bash
 $ python scripts/config_motors.py
 ```
+
+N.B: the script should be re-run if you change power supply! For example, from bench power supply (for testing) to 10kW supply
+
 
 ### Live plotting
 It may be useful to live plot the setpoint vs motor output. Do so using,
