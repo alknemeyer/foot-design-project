@@ -13,6 +13,13 @@ from odrive.utils import dump_errors
 from typing import Literal, Optional, Tuple, TYPE_CHECKING
 import math
 
+import logging  # for optoforce. Nothing else logs
+logging.basicConfig(
+    format='%(asctime)s | %(levelname)s | %(name)s: %(message)s',
+    datefmt='%I:%M:%S',
+    level=logging.INFO,
+)
+
 if TYPE_CHECKING:
     from odrive import ODrive
 

@@ -10,17 +10,9 @@ import odrive
 odrv0 = odrive.find_any()
 assert odrv0 is not None, "Couldn't find the odrive"
 
-##
 import time
 from scripts import lib
 from scripts.lib import PositionControl, set_foot_position as setfoot
-
-import logging  # for optoforce. Nothing else logs
-logging.basicConfig(
-    format='%(asctime)s | %(levelname)s | %(name)s: %(message)s',
-    datefmt='%I:%M:%S',
-    level=logging.INFO,
-)
 
 ## simple tests:
 # just increment:
@@ -43,8 +35,8 @@ with PositionControl(odrv0):
 #     for x, y in ((0, -0.4), (0.2, -0.2), (-0.2, -0.2), (0, -0.2)):
 #         th0, th1 = lib.foot_xy_to_th_deg(x_m=x, y_m=y)
 #         print(f'changing to: {th0=} {th1=} {x=} {y=}')
-#         set_to_nearest_angle(th0, motornum=0, vel_limit=180)
-#         set_to_nearest_angle(th1, motornum=1, vel_limit=180)
+#         lib.set_to_nearest_angle(odrv0, th0, motornum=0, vel_limit=180)
+#         lib.set_to_nearest_angle(odrv0, th1, motornum=1, vel_limit=180)
 #         time.sleep(5)
 
 
