@@ -1,3 +1,17 @@
+"""
+Motor configuration and calibration script. Run as follows:
+
+    python scripts/config_motors.py
+
+but copy-pasting the code into a REPL is better if you're still
+figuring parameters out, and want to re-run this multiple times
+without rebooting/re-finding the device
+
+For some parameters/numbers related to current etc, check out:
+https://www.harrisaerial.com/wp-content/uploads/2016/12/U10-Plus-80KV-Data.jpg
+found via
+https://www.harrisaerial.com/product/t-motor-u10-plus-80kv-100kv-170kv/
+"""
 import odrive
 from odrive.enums import (
     MOTOR_TYPE_HIGH_CURRENT,
@@ -12,7 +26,7 @@ cpr = 4*500
 
 def config_motor(ax: 'odrive.Axis'):
     # current limit in [A]
-    ax.motor.config.current_lim = 40  # not sure!
+    ax.motor.config.current_lim = 15  # not sure!
 
     # how much the current can swing (I think)
     # change this if doing current control, and get
@@ -61,7 +75,7 @@ def config_motor(ax: 'odrive.Axis'):
     ax.encoder.config.pre_calibrated = True
     ax.motor.config.pre_calibrated = True
 
-    dump_errors(odrv0)
+    dump_errors(odrv0, True)
 
 
 # reboot first, to make sure we don't save other random settings on the device
