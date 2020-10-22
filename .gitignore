@@ -4,6 +4,8 @@ log.csv
 Arduino/
 Optoforce/
 data/raw-opto-log.csv
+data/force-animation.mp4
+data/increasing-hop-height.png
 traj-opt/.ipopt-log.txt
 **/.ipynb_checkpoints
 **/__pycache__
