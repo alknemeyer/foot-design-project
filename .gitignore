@@ -1,4 +1,3 @@
-ODrive/
 chris-odrive/
 log.csv
 Arduino/
@@ -6,6 +5,7 @@ Optoforce/
 data/raw-opto-log.csv
 data/force-animation.mp4
 data/increasing-hop-height.png
+data/increasing-hop-height.MOV
 traj-opt/.ipopt-log.txt
 **/.ipynb_checkpoints
 **/__pycache__
