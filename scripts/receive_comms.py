@@ -1,26 +1,37 @@
-from typing import List
-import csv, numpy as np, serial, time
+from typing import List, Tuple
+import csv
+import serial
+import struct
 
-data: List[List[float]] = []
+HEADER = bytes([0xAA, 0x55])
+DATAFMT = '<ff'
 
-with serial.Serial('/dev/ttyACM1', 115200, timeout=1) as ser:
-    print('waiting for start', end='')
-    while ser.readline().decode().rstrip() != 'global_yaw,global_pitch':
-        print('.', end='')
-        time.sleep(0.5)
+data: List[Tuple[float, float]] = []
 
-    print(' connected!')
+print('connecting... ', end='')
+with serial.Serial('/dev/ttyACM0', 250_000) as ser:
+    print('connected! Press ctrl+c to exit')
+    ser.reset_input_buffer()
 
-    while (line := ser.readline().decode().rstrip()) != 'END LOGGING':
-        line = line.split(',')
-        yaw = float(line[0])
-        pitch = float(line[1])
-        data.append([yaw, pitch])
+    while True:
+        try:
+            ser.read_until(HEADER)
+            print('found header')
+            data_bytes = ser.read(struct.calcsize(DATAFMT))
+            print(data_bytes)
+            height_m, boom_pos_m = struct.unpack(
+                DATAFMT, data_bytes,
+            )
+            print(height_m, boom_pos_m)
 
-with open('log.csv', 'w', newline='') as csvfile:
-    writer = csv.writer(csvfile)
-    writer.writerow(['global_yaw', 'global_pitch'])
-    writer.writerows(data)
+            data.append((height_m, boom_pos_m))
 
-print('File contents:')
-print(np.array(data))
+        except KeyboardInterrupt:
+            break
+
+# print('disconnected. Writing file...')
+
+# with open('log.csv', 'w', newline='') as csvfile:
+#     writer = csv.writer(csvfile)
+#     writer.writerow(['global_yaw', 'global_pitch'])
+#     writer.writerows(data)
