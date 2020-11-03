@@ -11,7 +11,10 @@ source-conda;
 and conda activate foot-design;
 
 # if the script is run as `./startfish i`,
-# launch ipython
+# launch ipython with autoreload activated
 and if test "$argv[1]" = "i"
-    ipython
+    echo """
+%load_ext autoreload
+%autoreload 2
+""" | ipython -i
 end
