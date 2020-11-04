@@ -1,34 +1,32 @@
-"""
-$ python scripts/config_motors.py
-$ ipython
->>> %load_ext autoreload
->>> %autoreload 2
-"""
-
-##
+import time
+from scripts import lib
+from scripts.lib import (
+    PositionControl, CurrentControl, set_foot_position as setfoot,
+)
 import odrive
 odrv0 = odrive.find_any()
 assert odrv0 is not None, "Couldn't find the odrive"
+lib.zero_motors_no_index(odrv0)
 
-import time
-from scripts import lib
-from scripts.lib import PositionControl, set_foot_position as setfoot
 
 ## simple tests:
 # just increment:
 with PositionControl(odrv0):
     lib.medium_gains(odrv0)
-    for _ in range(5):
+    for _ in range(3):
         odrv0.axis0.controller.pos_setpoint -= 100
         odrv0.axis1.controller.pos_setpoint += 100
         time.sleep(1)
         print('.'*50)
 
 # test for slipping:
-# while True:
-#     p0, p1 = odrv0.axis0.encoder.pos_estimate, odrv0.axis1.encoder.pos_estimate
-#     print(f'{p0:7.3f}, {p1:7.3f}, {p0-p1:7.3f}')
-#     time.sleep(1)
+while True:
+    try:
+        p0, p1 = odrv0.axis0.encoder.pos_estimate, odrv0.axis1.encoder.pos_estimate
+        print(f'{p0:7.3f}, {p1:7.3f}, {p0-p1:7.3f}')
+        time.sleep(1)
+    except KeyboardInterrupt:
+        break
 
 # with PositionControl(odrv0):
 #     lib.fast_gains(odrv0)
@@ -39,6 +37,20 @@ with PositionControl(odrv0):
 #         lib.set_to_nearest_angle(odrv0, th1, motornum=1, vel_limit=180)
 #         time.sleep(5)
 
+odrv0.axis0.motor.config.current_lim = 20
+odrv0.axis1.motor.config.current_lim = 20
+
+odrv0.axis0.motor.config.current_lim_tolerance = 40
+odrv0.axis1.motor.config.current_lim_tolerance = 40
+
+# check that it can balance
+with PositionControl(odrv0):
+    lib.set_gains(odrv0, pos_scale=10, vel_scale=10, bandwidth_hz=5)
+    setfoot(odrv0, x_m=-0.02, y_m=-0.350, vel_limit=100_00*360, sleep=1)
+# with PositionControl(odrv0):
+#     lib.set_gains(odrv0, pos_scale=15, vel_scale=10, bandwidth_hz=30)
+#     setfoot(odrv0, x_m=-0.02, y_m=-0.380, vel_limit=None, sleep=1)
+
 
 ## let's try a jump
 # go into crouch position, then launch, then try to land
@@ -46,7 +58,7 @@ with PositionControl(odrv0):
     # while True:
     for i in [50, 100, 150, 200, 250, 300]:
         print('crouching')
-        setfoot(odrv0, x_m=0, y_m=-0.150, gains='slow', vel_limit=360, sleep=2)
+        setfoot(odrv0, x_m=0, y_m=-0.150, gains='medium', vel_limit=360, sleep=2)
         
         print('launching: i =', i)
         setfoot(odrv0, x_m=0, y_m=-0.380, gains='fast', vel_limit=i*360, sleep=0.5)
