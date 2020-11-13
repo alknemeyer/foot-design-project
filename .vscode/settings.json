@@ -1,4 +1,5 @@
 {
     "python.pythonPath": "/home/alex/miniconda3/envs/foot-design/bin/python",
-    "arduino.path": "/home/alex/Projects/foot-design-project/Arduino/arduino-1.8.13/"
+    "arduino.path": "/home/alex/Projects/foot-design-project/Arduino/arduino-1.8.13/",
+    "jupyter.jupyterServerType": "local"
 }
