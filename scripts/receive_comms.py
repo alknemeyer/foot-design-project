@@ -15,10 +15,9 @@ with serial.Serial('/dev/ttyACM0', 250_000) as ser:
 
     while True:
         try:
+            # ser.reset_input_buffer()
             ser.read_until(HEADER)
-            print('found header')
             data_bytes = ser.read(struct.calcsize(DATAFMT))
-            print(data_bytes)
             height_m, boom_pos_m = struct.unpack(
                 DATAFMT, data_bytes,
             )
