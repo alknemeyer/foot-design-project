@@ -7,7 +7,7 @@
 //------------------------MPU ---------------------------------------
 #define AHRS false         // Set to false for basic data read
 #define SerialDebug false  // Set to true to get Serial output for debugging
-#define intPin 7
+const uint8_t intPin = 7;
 #define SPIspeed 1000000
 #define SPIport SPI
 #define CSpin   10
@@ -21,17 +21,17 @@ uint8_t dist = 0;
 
 //------------------------Comms ---------------------------------------
 int loopCnt = 0;
-
+const uint32_t laptop_baud = 500000;
 int wait = 0;
 
-#define Lp 1
-#define Axp 0
-#define Azp 1
-#define Lw 0
-#define Axw 1
-#define Azw 2
+const uint8_t Lp  = 1;
+const uint8_t Axp = 0;
+const uint8_t Azp = 1;
+const uint8_t Lw  = 0;
+const uint8_t Axw = 1;
+const uint8_t Azw = 2;
 
-float Azoff = 0;
+float Az_offset = 0;
 uint8_t runCnt = 0;
 unsigned long previousTime = 0;
 
@@ -44,65 +44,44 @@ void writeBytesFloats(uint8_t sensor, float data, uint8_t par);
 
 //------------------------Setup ---------------------------------------
 void setup() {
-  //Serial.begin(9600);
-  Serial.begin(500000);
+  Serial.begin(laptop_baud);
   setUpMPU();
-  //Serial.println("MPU DONE");
   setUpLidarLite();
-  //Serial.println("Lidar Done");
   
-  //pinMode(8,OUTPUT);
-  //digitalWrite(8, HIGH);
-  // put your setup code here, to run once:
-  for(int i =0; i<10; i++)
-  {
+  // calibration
+  for (int i = 0; i < 10; i++) {
     readMPU();
-    Azoff = Azoff + myIMU.az;
+    Az_offset = Az_offset + myIMU.az;
   }
-  Azoff = Azoff/10;
+  Az_offset = Az_offset/10;
 }
 
 //------------------------Main ---------------------------------------
 void loop() {
-
-  if (runCnt < 5)
-  {
+  if (runCnt < 5) {
+    // write ax and az to serial
     readMPU();
-    //Serial.print("Ax;");  
-    //Serial.println(myIMU.ax);
     writeBytesFloats(Axw, myIMU.ax, Axp);
-    //Serial.print("Az;");  
-    //Serial.println(myIMU.az);
-    //
-    float azDat = myIMU.az - Azoff;
-    writeBytesFloats(Azw, myIMU.az, Azp);//<---- This was commented out
-    //
+    writeBytesFloats(Azw, myIMU.az, Azp);
     runCnt++;
-  }
-  else
-  {
-    if (loopCnt<5)
-    {
+  
+  } else {
+    if (loopCnt < 5) {
       dist = distanceFast(false, LIDARLITE_ADDR_DEFAULT);
       loopCnt++;
-    }
-    else
-    {
+    } else {
       dist = distanceFast(true, LIDARLITE_ADDR_DEFAULT);
-      loopCnt=0;
+      loopCnt = 0;
     }
-    //Serial.print("Dist;");
-    //Serial.println(dist);
+    // write distance
     writeBytesFloats(Lw, dist, Lp);
 
     runCnt = 0;
   }
-  //wait_control_loop(500);
 }
 
 //------------------------------SetUpMPU--------------------------------------------
-void setUpMPU()
-{
+void setUpMPU() {
   pinMode(intPin, INPUT);
   digitalWrite(intPin, LOW);
 
@@ -111,21 +90,20 @@ void setUpMPU()
   myIMU.readByte(MPU9250_ADDRESS, WHO_AM_I_MPU9250); // Kick the hardware
 
   byte c = myIMU.readByte(MPU9250_ADDRESS, WHO_AM_I_MPU9250);
-  if (SerialDebug)
-  {
+
+  if (SerialDebug) {
     Serial.print(F("MPU9250 I AM 0x"));
     Serial.print(c, HEX);
     Serial.print(F(" I should be 0x"));
     Serial.println(0x71, HEX);
   }
 
-  if (c == 0x71) // WHO_AM_I should always be 0x71
-  {
+  // WHO_AM_I should always be 0x71
+  if (c == 0x71) {
     // Start by performing self test and reporting values
     myIMU.MPU9250SelfTest(myIMU.selfTest);
 
-    if (SerialDebug)
-    {
+    if (SerialDebug) {
       Serial.println(F("MPU9250 is online..."));
       Serial.print(F("x-axis self test: acceleration trim within : "));
       Serial.print(myIMU.selfTest[0],1); Serial.println("% of factory value");
@@ -144,16 +122,13 @@ void setUpMPU()
     // Calibrate gyro and accelerometers, load biases in bias registers
     myIMU.calibrateMPU9250(myIMU.gyroBias, myIMU.accelBias);
   
-    myIMU.initMPU9250();
     // Initialize device for active mode read of acclerometer, gyroscope, and temperature
-    //Serial.println("MPU9250 initialized for active data mode....");
+    myIMU.initMPU9250();
 
     // Get sensor resolutions, only need to do this once
     myIMU.getAres();
     myIMU.getGres();
-  } 
-  else
-  {
+  } else {
     Serial.print("Could not connect to MPU9250: 0x");
     Serial.println(c, HEX);
 
@@ -165,10 +140,8 @@ void setUpMPU()
 }
 
 //-------------------------------ReadMPU--------------------------------------------
-void readMPU()
-{
-  if (myIMU.readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01)
-  {
+void readMPU() {
+  if (myIMU.readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01) {
     myIMU.readAccelData(myIMU.accelCount);  // Read the x/y/z adc values
 
     // Now we'll calculate the accleration value into actual g's
@@ -353,12 +326,13 @@ void writeBytesFloats(uint8_t sensor, float data, uint8_t par)
   }
 }
 
-void wait_control_loop(uint16_t loopTime)
-{
-  unsigned long evalTime = previousTime + loopTime;
-  while (micros() < evalTime) 
-  {
+// unused?
+// void wait_control_loop(uint16_t loopTime)
+// {
+//   unsigned long evalTime = previousTime + loopTime;
+//   while (micros() < evalTime) 
+//   {
      
-  }
-  previousTime=micros();
-}
+//   }
+//   previousTime = micros();
+// }
