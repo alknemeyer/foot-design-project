@@ -1,145 +1,87 @@
 #include <BasicLinearAlgebra.h>
-#include <QuadEncoder.h>
 #include <TeenHead.h>
 #include <math.h>
 
-
-//---------------------------------------------------------------------------------------------------
-//----------------------------------Defines for useful constants-------------------------------------
-//---------------------------------------------------------------------------------------------------
 void init_params();
 void wait_control_loop();
-void run_controller();
-void horzontal_controller();
-void testPos();
 
-//-------------------------------------control loop variables----------------------------------------
-#define loopTime 500 // Gives control loop 2kHz Frequency
-unsigned long previousTime = 0;
-unsigned long evalTime = 500;
+bool doneinit = false;
 
-bool doneInit = false;
-bool started = false;
-bool dead = false;
+// control loop variables -> 2kHz control loop
+// if you enconter problems, slow down
+unsigned long looptime_us = 500;
+unsigned long prevtime_us = 0;
+unsigned long evaltime_us = 0;
 
-int MotorCnt = 0;
-float motorPosition;
-
-//-------------------------------------------------------------------------------------
-//----------------------------------SetUp Functions------------------------------------
-//-------------------------------------------------------------------------------------
-
+// main arduino setup() function
 void setup() {
-  setup_motor_comms();
+  setup_laptop_comms();
+  // while (true) { laptop_comm(); delay(1000); }
   setup_encoders();
-  setup_Ard_comms();
+  setup_arduino_comms();
 }
 
-//-------------------------------------------------------------------------------
-//----------------------------------Main Loop------------------------------------
-//-------------------------------------------------------------------------------
-
+// main arduino loop() function
 void loop() {
-  //------------------Wait for initialisation-------------------------
-  // Holds till initalise button is pressed and then initialise the system
-  while (doneInit == false) {
-    if (digitalRead(INIT) == LOW) {
-      float lidarInit = 0;
-      init_params();
+  // hold until initalise button is pressed
+  while (doneinit == false) {
+    float lidarInit = 0;
+    init_params();
 
-      for (int h = 0; h < 10; h++) {
-        while (X_bar(0) < -0.001 || X_bar(0) > 0.001) {
-          init_params();
-          for (int k = 0; k < 100; k++) {
-            int ReadStat = -1;
-            while (ReadStat == -1) {
-              ReadStat = read_Ard();
-            }
-            predictKF();
-            updateKF(ReadStat);
-            wait_control_loop();
+    for (int h = 0; h < 10; h++) {
+      while (X_bar(0) < -0.001 || X_bar(0) > 0.001) {
+        init_params();
+        for (int k = 0; k < 100; k++) {
+          int readstat = -1;
+          while (readstat == -1) {
+            readstat = read_arduino();
           }
+          predictKF();
+          updateKF(readstat);
+          wait_control_loop();
         }
-        lidarInit = lidarInit + LidarOffset;
       }
-      LidarOffset = lidarInit / 10;
-
-      doneInit = true;
+      lidarInit = lidarInit + LidarOffset;
     }
+    LidarOffset = lidarInit / 10;
+    doneinit = true;
   }
 
-  //--------------------Hold for system start-------------------------
-  // Holds in the while loop till the start button is pressed
-  while (started == false) {
-    if (digitalRead(START) == LOW) {
-      started = true;
-    }
-  }
-
-  //---------------------Get Data--------------------------------
-  // Reads data from the various sensors+
+  // read data from encoder and arduino
   get_encoder_values(0.0005);
-  int ReadStat = -1;
+
+  int readstat = -1;
   uint32_t timeread = micros();
-  while (ReadStat == -1 && ((micros() - timeread) < 450)) {
-    ReadStat = read_Ard();
+  while (readstat == -1 && ((micros() - timeread) < 450)) {
+    readstat = read_arduino();
   }
 
   //-------------------Run KalmanFilter--------------------------
   predictKF();
-  updateKF(ReadStat);
+  updateKF(readstat);
 
   //----------------------Controller-----------------------------
-  // check if control killed:
-  if (digitalRead(KILL) == LOW) {
-    dead = true;
-    motorCom(2, 0);
-  } else {
-    run_controller();
-  }
-  while (dead) {
-    // Hang in dead state
-  }
-
-  // comms to motor runs at 500Hz if you enconter problems slow down
-  if (MotorCnt >= 3) {
-    motorCom(0, motorPosition);
-    float tempPosition = motorCom(3);
-    if (-1.5 < tempPosition < 1.5) {
-      tempPosition = -tempPosition;
-    } else {
-      tempPosition = Position;
-    }
-    Position = tempPosition;
-    MotorCnt = 0;
-  } else {
-    MotorCnt++;
-  }
+  laptop_comm();
 
   // wait for control loop to be finished
   wait_control_loop();
 }
-
-//---------------------------------------------------------------------------------
-//----------------------------------Conteroller------------------------------------
-//---------------------------------------------------------------------------------
-void run_controller() {}
 
 //-----------------------------------------------------------------------------------------
 //----------------------------------Auxiliary Functions------------------------------------
 //-----------------------------------------------------------------------------------------
 
 void wait_control_loop() {
-  evalTime = previousTime + loopTime;
-  while (micros() < evalTime) {
-  }
-  previousTime = micros();
+  evaltime_us = prevtime_us + looptime_us;
+  while (micros() < evaltime_us) {}
+  prevtime_us = micros();
 }
+
 void init_params() {
   boom_X_enc.write(0);
 
-  Serial5.flush();
-  Serial3.flush();
+  Serial.flush();
+  ArdSerial.flush();
 
   setup_KF();
 }

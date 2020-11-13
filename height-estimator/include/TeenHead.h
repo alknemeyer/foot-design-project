@@ -5,43 +5,33 @@
 #include <BasicLinearAlgebra.h>
 using namespace BLA;
 
-#define PPR 4096
-#define XConversion 0.64
-#define LBoom 2.045 // TODO: update to actual length!
+const uint32_t PPR = 4096;
+const float XConversion = 0.64;
+const float boom_length_m = 1.75;
 
-#define loopTime 500
-
-#define Ard_baud 500000
+// comms to arduino
+// Serial5 of teensy is tx=20-A6 and rx=21-A7
+#define ArdSerial Serial5
+const uint32_t arduino_baud = 500000;
 
 // PIN MAPPING
 #define X_enc_A 2 // 2
 #define X_enc_B 3 // 3
 
-#define TX_motor 14 // 14-A0    SERIAL 3 motor comms TX
-#define RX_motor 15 // 15-A1    SERIAL 3 motor comms RX
+void laptop_comm();
+void send_two_floats(float, float);
 
-#define TX_KF 20 // 20-A6
-#define RX_KF 21 // 21-A7
-
-#define KILL 9   // 9
-#define INIT 10  // 10
-#define START 19 // 19-A5
-
-// comms to motor
-#define motor_baud 250000
-int motor_pos;
-int motor_vel;
-int motor_current;
-bool commsWait();
+// comms to laptop
+const uint32_t laptop_baud = 250000;
+bool laptop_comms_wait();
 
 // encode variables
 float boom_X_current_pos;
 float boom_X_old_pos = 0;
 int32_t boom_X_CTS;
 
-QuadEncoder
-    boom_X_enc(1, X_enc_A, X_enc_B,
-               0); // Enc 1, Phase A (pin0), PhaseB(pin1), Pullups Req(0)
+// Enc 1, Phase A (pin0), PhaseB(pin1), Pullups Req(0)
+QuadEncoder boom_X_enc(1, X_enc_A, X_enc_B, 0);
 float boom_X_current_vel;
 
 // LiDAR variables
@@ -57,8 +47,7 @@ byte bufTemp[13] = {0};
 byte message[7] = {0};
 
 // KF Vars
-#define R 0.000625
-#define dAmax 3000
+const float R = 0.000625;
 int KFcnt = 0;
 int i = 0;
 int temp, tempP;
@@ -77,8 +66,6 @@ BLA::Matrix<3, 3> P;
 BLA::Matrix<3, 3> P_bar;
 BLA::Matrix<1, 3> H;
 BLA::Matrix<3> Xm;
-
-float Position = 0;
 
 void updateF(float Fup);
 void updateQ(float azCovA, float azCovB, float azCovC);
@@ -109,7 +96,7 @@ void get_encoder_values(float deltaT) {
 
   // Convert to planar
   boom_X_current_pos =
-      ((LBoom) * (boom_X_CTS * M_PI * (44 / 28) / PPR)) / XConversion;
+      ((boom_length_m) * (boom_X_CTS * M_PI * (44 / 28) / PPR)) / XConversion;
 
   // calculate encoder vel
   boom_X_current_vel = (boom_X_current_pos - boom_X_old_pos) / deltaT;
@@ -118,21 +105,21 @@ void get_encoder_values(float deltaT) {
 // ------------------------------- KF Data Functions
 // ------------------------------------------- Check what serial port on the
 // teensy you are using for arduino comms
-void setup_Ard_comms() {
-
-  Serial5.begin(Ard_baud);
-  Serial5.flush();
+void setup_arduino_comms() {
+  ArdSerial.begin(arduino_baud);
+  ArdSerial.flush();
 }
 
 // Reads data from arduino to global vars, returns 1 for lidar, 2 for Az,
 // 3 for Ax with preference. Reads till serial buffer is empty
-int read_Ard() {
-
+int read_arduino() {
   int dat = -1;
-  while (Serial5.available()) {
+
+  while (ArdSerial.available()) {
     tempP = temp;
-    temp = Serial5.read();
+    temp = ArdSerial.read();
     bufTemp[i] = temp;
+
     if (temp == 88 && tempP == 88) {
       if (i - 7 < 0) {
         memcpy(message, bufTemp + 13 + (i - 7), 7 - i);
@@ -151,7 +138,7 @@ int read_Ard() {
           Lidar = Lidar / 100;
           dat = 0;
         } else {
-          Serial5.flush();
+          ArdSerial.flush();
         }
       } else if (message[0] == 1) {
         if (Az < 100) {
@@ -209,17 +196,18 @@ void setup_KF() {
   H(0, 1) = 0;
   H(0, 2) = 0;
 
-  int temp = read_Ard();
+  int temp = read_arduino();
   float LidarTot = 0;
 
   for (int j = 0; j < 10; j++) {
     while (temp != 0) {
-      temp = read_Ard();
+      temp = read_arduino();
     }
   }
+  // while (true) { laptop_comm(); delay(1000); }
   for (int k = 0; k < 100; k++) {
     while (temp != 0) {
-      temp = read_Ard();
+      temp = read_arduino();
     }
     LidarTot += Lidar;
   }
@@ -307,58 +295,44 @@ void updateKF(int dat) {
   }
 }
 
-// ------------------------------ Motor Comms ---------------------------
-void setup_motor_comms() {
-  Serial3.begin(motor_baud);
-  Serial3.flush();
+// ------------------------------ Laptop Comms ---------------------------
+void setup_laptop_comms() {
+  Serial.begin(laptop_baud);
+  Serial.write("teensy-laptop comms working");
+  Serial.flush();
 }
 
-// Motor comms
-// (0, PosCommand)    -> Position Control ignore return its legacy
-// (1, VelCommand)    -> Velocity Control (untested) ignore return its legacy
-// (2, TorqueCommand) -> Torque Control ignore return its legacy
-// (3)                -> get Pos
+void send_two_floats(float height_m, float boom_pos_m) {
+  // header
+  Serial.write((uint8_t)0xAA);
+  Serial.write((uint8_t)0x55);
 
-float motorCom(uint8_t cmdType) {
-  Serial3.write(cmdType);
-
-  bool readtest = commsWait();
-
-  byte bufTemp[4] = {0};
-  if (readtest == 0) {
-    for (int i = 0; i < 4; i++) {
-      bool readtest = commsWait();
-      if (readtest == 0) {
-        bufTemp[i] = Serial3.read();
-      } else {
-        break;
-      }
-    }
-  }
-
-  float x = *((float *)(bufTemp));
-  return x;
+  // data
+  Serial.write((uint8_t*)&height_m, sizeof(height_m));
+  Serial.write((uint8_t*)&boom_pos_m, sizeof(boom_pos_m));
 }
 
-float motorCom(uint8_t cmdType, float cmdVal) {
-  Serial3.write(cmdType);
-  float tempSend = cmdVal;
-  byte *dataByte = (byte *)&tempSend;
-  byte buffer[4] = {0};
+void laptop_comm() {
+  // float height_m = 1.5;
+  // float boom_pos_m = 3.6;
+  float height_m = Xm(0, 0);
+  float boom_pos_m = boom_X_current_pos;
 
-  memcpy(buffer, dataByte, 4);
-
-  Serial3.write(buffer, 4);
-  return 1;
+  send_two_floats(height_m, boom_pos_m);
+  // float tempSend = height_m;
+  // byte *dataByte = (byte *)&tempSend;
+  // byte buffer[4] = {0};
+  // memcpy(buffer, dataByte, 4);
+  // Serial.write(buffer, 4);
 }
 
-bool commsWait() {
+bool laptop_comms_wait() {
   uint16_t currtime = micros();
-  bool comTimeout = false;
-  while (Serial3.available() == 0 && comTimeout == false) {
+  bool commtimeout = false;
+  while (Serial.available() == 0 && commtimeout == false) {
     if (micros() - currtime > 2000) {
-      comTimeout = true;
+      commtimeout = true;
     }
   }
-  return comTimeout;
+  return commtimeout;
 }
