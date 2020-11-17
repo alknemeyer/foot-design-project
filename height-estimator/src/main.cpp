@@ -1,3 +1,5 @@
+// originally written by Josh van Zyl and Callen Fisher
+// refactored and modified for this project by Alexander Knemeyer
 #include <BasicLinearAlgebra.h>
 #include <TeenHead.h>
 #include <math.h>
