@@ -16,6 +16,8 @@ parser.add_argument('-a', '--animate', action='store_true',
                     help='show an animation. Otherwise, just plot')
 parser.add_argument('--save', action='store_true',
                     help='if the animation should be saved to disk')
+parser.add_argument('-i', '--inputfilename', default='data/raw-opto-log.csv',
+                    help='.csv file of logged force data')
 parser.add_argument('-f', '--filename', default='data/force-animation.mp4',
                     help='where the animation should be saved')
 parser.add_argument('-s', '--start', type=int, default=0,
@@ -32,7 +34,7 @@ def convert(s: bytes):
 
 
 arr: np.ndarray = np.loadtxt(
-    'data/raw-opto-log.csv', delimiter=',',
+    args.inputfilename, delimiter=',',
     skiprows=1, usecols=[0, 1, 2, 3],
     converters={0: convert},
 )
