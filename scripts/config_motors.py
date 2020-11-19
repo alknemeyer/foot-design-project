@@ -38,7 +38,7 @@ def config_motor(ax: 'odrive.Axis'):
 
     # calibration current [A]
     # = continuous current when stationary
-    ax.motor.config.calibration_current = 5  # not sure!
+    ax.motor.config.calibration_current = 10  # not sure!
 
     # number of magnet poles in motor divided by two
     ax.motor.config.pole_pairs = 20
@@ -65,7 +65,7 @@ def config_motor(ax: 'odrive.Axis'):
     # set startup sequence
     # see https://docs.odriverobotics.com/api/odrive.axis.axisstate
     ax.config.startup_motor_calibration = False
-    ax.config.startup_encoder_index_search = True
+    ax.config.startup_encoder_index_search = False
     ax.config.startup_encoder_offset_calibration = False
     ax.config.startup_closed_loop_control = False
     ax.config.startup_sensorless_control = False
@@ -81,7 +81,6 @@ def config_motor(ax: 'odrive.Axis'):
 # reboot first, to make sure we don't save other random settings on the device
 print('finding and rebooting odrive...')
 odrv0 = odrive.find_any()
-assert odrv0 is not None, "Couldn't find the odrive"
 try:
     odrv0.reboot()
 except ChannelBrokenException:
@@ -89,13 +88,14 @@ except ChannelBrokenException:
 
 print('finding odrive...')
 odrv0 = odrive.find_any()
-assert odrv0 is not None, "Couldn't find the odrive"
 
 # brake resistance [Ohm]
 odrv0.config.brake_resistance = 10  # gold one, brown one w/purple wires is 5ohm
 
-print('configuring motors...')
+print('configuring motor 0...')
 config_motor(odrv0.axis0)
+
+print('configuring motor 1...')
 config_motor(odrv0.axis1)
 
 print('saving config in memory....')
