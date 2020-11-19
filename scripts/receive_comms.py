@@ -15,18 +15,25 @@ with serial.Serial('/dev/ttyACM0', 250_000) as ser:
 
     while True:
         try:
-            # ser.reset_input_buffer()
+            ser.reset_input_buffer()
             ser.read_until(HEADER)
             data_bytes = ser.read(struct.calcsize(DATAFMT))
             height_m, boom_pos_m = struct.unpack(
                 DATAFMT, data_bytes,
             )
-            print(height_m, boom_pos_m)
+            print(f'height = {1000*height_m:.4f} mm, boom pos = {boom_pos_m:.2f} m')
 
             data.append((height_m, boom_pos_m))
 
         except KeyboardInterrupt:
             break
+
+import matplotlib.pyplot as plt
+plt.style.use('seaborn')
+plt.title('Height data [mm]')
+plt.plot([1000*d[0] for d in data])
+plt.show()
+
 
 # print('disconnected. Writing file...')
 
