@@ -157,6 +157,29 @@ def l_dir(x: float): return -x
 def r_dir(x: float): return -x
 
 
+def upper_leg_angles(odrv: 'ODrive'):
+    """
+    Test:
+    >>> for i in range(10):
+    ...     print(upper_leg_angles(odrv0))
+    ...     time.sleep(1)
+    """
+    e0 = odrv.axis0.encoder
+    e1 = odrv.axis1.encoder
+    c2a = encoder_count_to_leg_angle_deg
+    th_ul = c2a(int(e1.pos_estimate))
+    th_ur = c2a(int(e0.pos_estimate))
+    dth_ul = c2a(int(e1.vel_estimate))
+    dth_ur = c2a(int(e0.vel_estimate))
+    return th_ul, th_ur, dth_ul, dth_ur
+    # return {
+    #     'th_ul': c2a(int(e1.pos_estimate)),
+    #     'th_ur': c2a(int(e0.pos_estimate)),
+    #     'dth_ul': c2a(int(e1.vel_estimate)),
+    #     'dth_ur': c2a(int(e0.vel_estimate)),
+    # }
+
+
 #=#=#=#=#=#=#=#=# GAINS #=#=#=#=#=#=#=#=#
 
 def set_gains(odrv0: 'ODrive',
@@ -187,8 +210,6 @@ def medium_gains(odrv0: 'ODrive'):
 
 def fast_gains(odrv0: 'ODrive'):
     set_gains(odrv0)
-
-
 
 
 def nearest_cpr(curr: float, dest: float) -> float:
@@ -294,3 +315,19 @@ def set_foot_position(odrv0: 'ODrive', x_m: float, y_m: float,
 def set_current(odrv: 'ODrive', motor0: float, motor1: float):
     odrv.axis0.controller.current_setpoint = motor0
     odrv.axis1.controller.current_setpoint = motor1
+
+
+from dataclasses import dataclass
+@dataclass
+class PDControl:
+    x0: float
+    dx0: float
+    kp: float
+    kd: float
+
+    def __call__(self, x: float, dx: float) -> float:
+        kp = self.kp
+        kd = self.kd
+        x0 = self.x0
+        dx0 = self.dx0
+        return kp * (x0 - x) + kd * (dx0 - dx)
