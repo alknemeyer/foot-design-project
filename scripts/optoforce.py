@@ -21,7 +21,6 @@ From: https://stackoverflow.com/questions/27858041/oserror-errno-13-permission-d
 import serial
 from serial.tools.list_ports import comports
 import struct
-from datetime import datetime
 import time
 
 # constants
