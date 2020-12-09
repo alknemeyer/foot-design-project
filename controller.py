@@ -1,7 +1,7 @@
 ########################################## OPTIONAL STUFF
 # ipython specific
-%load_ext autoreload  # type: ignore
-%autoreload 2         # type: ignore
+%load_ext autoreload
+%autoreload 2
 
 # give force sensor required permissions
 import os
@@ -20,11 +20,11 @@ odrv0
 
 ########################################## SIMPLE TESTS
 from scripts import test
-test.increment(odrv0)
+test.increment(odrv0, delta=100)
 test.slipping(odrv0)
 test.slow_position_control(odrv0)
 
-########################################## 
+########################################## INCREASE CURRENT
 # for ax in (odrv0.axis0, odrv0.axis1):
 #     ax.motor.config.current_lim = 15
 #     ax.motor.config.current_lim_tolerance = 3
@@ -32,55 +32,55 @@ test.slow_position_control(odrv0)
 #     ax.motor.config.current_lim = 15
 #     ax.motor.config.current_lim_tolerance = 1.25
 
+########################################## MOTOR ANGLE IMPEDANCE CONTROL
 kp = 0.2
 kd = kp/10
-th_ul, th_ur, dth_ul, dth_ur = lib.upper_leg_angles(odrv0)
+th_ul, th_ur, dth_ul, dth_ur = lib.upper_leg_angles_deg(odrv0)
 controller0 = lib.PDControl(th_ur, 0, kp, kd)  # -40 to launch
 controller1 = lib.PDControl(th_ul, 0, kp, kd)  # +40 to launch
 
 with CurrentControl(odrv0):
     while True:
         try:
-            th_ul, th_ur, dth_ul, dth_ur = lib.upper_leg_angles(odrv0)
+            th_ul, th_ur, dth_ul, dth_ur = lib.upper_leg_angles_deg(odrv0)
             curr0 = controller0(th_ur, dth_ur)
             curr1 = controller1(th_ul, dth_ul)
             lib.set_current(odrv0, motor0=curr0, motor1=curr1)
         except KeyboardInterrupt:
             break
 
-#
+########################################## LEG POSITION IMPEDANCE CONTROL
+# TODO: what is 0 deg? SHOULD be pointing right!
+#       also: radians vs degrees?
 from scripts.controller_generated import impedance_control, foot_state_polar
-th_ul, th_ur, dth_ul, dth_ur = lib.upper_leg_angles(odrv0)
-r, th, dr, dth = foot_state_polar(th_ul, th_ur, dth_ul, dth_ur)
-ddr_controller = lib.PDControl(r, dr, kp=0.1, kd=0.01)
-ddth_controller = lib.PDControl(th, dth, kp=0.1, kd=0.01)
+th_ul, th_ur, dth_ul, dth_ur = lib.upper_leg_angles(odrv0)  # rads
+r, th, dr, dth = foot_state_polar(th_ul, th_ur, dth_ul, dth_ur, lib.l3x, lib.l3y)
+ddr_controller = lib.PDControl(r, dr, kp=0.01, kd=0.001)
+ddth_controller = lib.PDControl(th, dth, kp=0.01, kd=0.001)
 
-looptimes = []
 with CurrentControl(odrv0):
     while True:
         try:
-            th_ul, th_ur, dth_ul, dth_ur = lib.upper_leg_angles(odrv0)
-            r, th, dr, dth = foot_state_polar(th_ul, th_ur, dth_ul, dth_ur)
+            th_ul, th_ur, dth_ul, dth_ur = lib.upper_leg_angles(odrv0)  # rads
+            r, th, dr, dth = foot_state_polar(th_ul, th_ur, dth_ul, dth_ur, lib.l3x, lib.l3y)
             curr0, curr1 = impedance_control(
                 ddr_setpoint=ddr_controller(r, dr),
                 ddth_setpoint=ddth_controller(th, dth),
-                th_ul=th_ul, th_ur=th_ur, dth_ul=dth_ul, dth_ur=dth_ur,
-                L_x=0, L_y=0, Kt=lib.torque_constant,
+                th_ul=th_ul+180, th_ur=th_ur+180, dth_ul=dth_ul, dth_ur=dth_ur,
+                L_x=0, L_y=0, l3x=lib.l3x, l3y=lib.l3y, Kt=lib.torque_constant,
             )
             lib.set_current(odrv0, motor0=curr0, motor1=curr1)
-
-            looptimes.append(time.time())
         except KeyboardInterrupt:
             break
 
-#
+########################################## INCREASE CURRENT LIMITS
 odrv0.axis0.motor.config.current_lim = 20
 odrv0.axis1.motor.config.current_lim = 20
 
-odrv0.axis0.motor.config.current_lim_tolerance = 40
-odrv0.axis1.motor.config.current_lim_tolerance = 40
+odrv0.axis0.motor.config.current_lim_tolerance = 4 #40
+odrv0.axis1.motor.config.current_lim_tolerance = 4 #40
 
-#
+########################################## SIMPLE LAUNCH
 with PositionControl(odrv0):
     # lib.fast_gains(odrv0)
     lib.set_gains(odrv0, pos_scale=3, vel_scale=5, bandwidth_hz=10)
@@ -89,7 +89,14 @@ with PositionControl(odrv0):
     lib.set_to_nearest_angle(odrv0, th1, motornum=1)#, vel_limit=180)
     time.sleep(2)
 
-# check that it can balance
+    lib.slow_gains(odrv0)
+    th0, th1 = lib.foot_xy_to_th_deg(x_m=-0, y_m=-0.15)
+    lib.set_to_nearest_angle(odrv0, th0, motornum=0, vel_limit=180)
+    lib.set_to_nearest_angle(odrv0, th1, motornum=1, vel_limit=180)
+    time.sleep(2)
+
+
+########################################## CAN IT BALANCE
 with PositionControl(odrv0):
     # lib.set_gains(odrv0, pos_scale=2, vel_scale=2, bandwidth_hz=5)
     setfoot(odrv0, x_m=0, y_m=-0.350, vel_limit=100_00*360, sleep=1, gains='fast')
@@ -98,7 +105,7 @@ with PositionControl(odrv0):
 #     setfoot(odrv0, x_m=-0.02, y_m=-0.380, vel_limit=None, sleep=1)
 
 
-## let's try a jump
+########################################## REPEATED JUMPS
 # go into crouch position, then launch, then try to land
 with PositionControl(odrv0):
     # while True:
@@ -111,6 +118,55 @@ with PositionControl(odrv0):
         
         print('landing')
         setfoot(odrv0, x_m=0, y_m=-0.150, gains='fast', vel_limit=3*360, sleep=2)
+
+
+########################################## LOG REPEATED JUMPS
+"""
+$ sudo chmod 666 /dev/ttyACM1
+$ python scripts/optoforce.py
+$ python scripts/plot_optoforce.py
+
+$ sudo chmod 666 /dev/ttyACM2
+$ python scripts/receive_comms.py
+"""
+import csv
+data = []
+
+def log_while_delaying(delay: float):
+    tstart = time.time()
+    while time.time() < tstart + delay:
+        th_ul, th_ur, dth_ul, dth_ur = lib.upper_leg_angles_deg(odrv0)
+        data.append([time.time(), th_ul, th_ur, dth_ul, dth_ur])
+
+
+# go into crouch position, then launch, then try to land
+with PositionControl(odrv0):
+    while True:
+        try:
+            # crouch
+            setfoot(odrv0, x_m=0, y_m=-0.15, gains='medium', vel_limit=360)
+            log_while_delaying(2.)
+
+            # launch
+            lib.set_gains(odrv0, pos_scale=3, vel_scale=5, bandwidth_hz=10)
+            setfoot(odrv0, x_m=0, y_m=-0.38)#, vel_limit=360)
+            log_while_delaying(0.5)
+
+            # impact
+            setfoot(odrv0, x_m=0, y_m=-0.2, gains='medium', vel_limit=360)
+            log_while_delaying(2.)
+        except KeyboardInterrupt:
+            break
+
+
+with open('data/leg-data.csv', 'w', newline='') as csvfile:
+    writer = csv.writer(csvfile)
+    writer.writerow(['time', 'th_ul', 'th_ur', 'dth_ul', 'dth_ur'])
+    writer.writerows(data)
+
+
+
+########################################## ATTIC
 
 
 # from optoforce import OptoForce16 as OptoForce

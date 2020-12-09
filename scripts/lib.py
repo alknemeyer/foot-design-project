@@ -7,6 +7,7 @@ ax1 = right motor (when looking from front)
     = left/back leg (same view)
     increasing setpoint (pos) -> clockwise
 """
+from dataclasses import dataclass
 import time
 from odrive.enums import *
 from odrive.utils import dump_errors
@@ -25,7 +26,8 @@ if TYPE_CHECKING:
 
 l1: float = 0.1375
 l2: float = 0.250
-l3: float = 0.030
+l3x: float = 0.0
+l3y: float = 0.0
 
 mu: float = 0.090  # roughly correct
 ml: float = 0.090  # short
@@ -34,6 +36,9 @@ mb: float = 4.460 - 2*mu - 2*ml
 
 encoder_cpr: int = 4*500
 gear_ratio: int = 2
+
+# see find-kt.py
+torque_constant: float = 0.2
 
 
 class PositionControl:
@@ -96,12 +101,12 @@ def foot_xy_to_th_deg(x_m: float, y_m: float) -> Tuple[float, float]:
     phi = math.atan2(y_m, x_m)
 
     th1 = phi + math.acos(
-        ((l2+l3)**2 - r**2 - l1**2) / (-2*r*l1)
+        ((l2+l3y)**2 - r**2 - l1**2) / (-2*r*l1)
     )
 
     # p = prime
-    xp = (x_m - l1*math.cos(th1)) * l2/(l2+l3) + l1*math.cos(th1)
-    yp = (y_m - l1*math.sin(th1)) * l2/(l2+l3) + l1*math.sin(th1)
+    xp = (x_m - l1*math.cos(th1)) * l2/(l2+l3y) + l1*math.cos(th1)
+    yp = (y_m - l1*math.sin(th1)) * l2/(l2+l3y) + l1*math.sin(th1)
     rp = math.sqrt(xp**2 + yp**2)
     phip = math.atan2(yp, xp)
 
@@ -114,9 +119,6 @@ def foot_xy_to_th_deg(x_m: float, y_m: float) -> Tuple[float, float]:
 def test_foot_xy_to_th_deg():
     import matplotlib.pyplot as plt
     from math import sin, cos, radians as r
-    """
-    from scripts.lib import foot_xy_to_th_deg, l1, l2, l3
-    """
     plt.cla()
     for x, y in [(0.0, -0.3), (0.3, -0.1)]:
         th1, th2 = foot_xy_to_th_deg(x, y)
@@ -157,11 +159,11 @@ def l_dir(x: float): return -x
 def r_dir(x: float): return -x
 
 
-def upper_leg_angles(odrv: 'ODrive'):
+def upper_leg_angles_deg(odrv: 'ODrive'):
     """
     Test:
     >>> for i in range(10):
-    ...     print(upper_leg_angles(odrv0))
+    ...     print(lib.upper_leg_angles_deg(odrv0))
     ...     time.sleep(1)
     """
     e0 = odrv.axis0.encoder
@@ -172,12 +174,11 @@ def upper_leg_angles(odrv: 'ODrive'):
     dth_ul = c2a(int(e1.vel_estimate))
     dth_ur = c2a(int(e0.vel_estimate))
     return th_ul, th_ur, dth_ul, dth_ur
-    # return {
-    #     'th_ul': c2a(int(e1.pos_estimate)),
-    #     'th_ur': c2a(int(e0.pos_estimate)),
-    #     'dth_ul': c2a(int(e1.vel_estimate)),
-    #     'dth_ur': c2a(int(e0.vel_estimate)),
-    # }
+
+
+def upper_leg_angles(odrv: 'ODrive'):
+    from math import radians
+    return map(radians, upper_leg_angles_deg(odrv))
 
 
 #=#=#=#=#=#=#=#=# GAINS #=#=#=#=#=#=#=#=#
@@ -317,7 +318,6 @@ def set_current(odrv: 'ODrive', motor0: float, motor1: float):
     odrv.axis1.controller.current_setpoint = motor1
 
 
-from dataclasses import dataclass
 @dataclass
 class PDControl:
     x0: float
@@ -331,3 +331,8 @@ class PDControl:
         x0 = self.x0
         dx0 = self.dx0
         return kp * (x0 - x) + kd * (dx0 - dx)
+
+# unsure of this until I know kt is good
+# def set_torque(odrv: 'ODrive', motor0: float, motor1: float):
+#     kt = torque_constant
+#     set_current(odrv, motor0*kt, motor1*kt)
