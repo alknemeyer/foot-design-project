@@ -17,6 +17,15 @@ unsigned long evaltime_us = 0;
 
 // main arduino setup() function
 void setup() {
+  // float tmp = 1.5;
+  // while (true) {
+  //   tmp += 1.1;
+  //   Serial.write((uint8_t)0xAA);
+  //   Serial.write((uint8_t)0x55);
+  //   Serial.write((uint8_t*)&tmp, sizeof(tmp));
+  //   Serial.write((uint8_t*)&tmp, sizeof(tmp));
+  //   delay(1000);
+  // }
   setup_laptop_comms();
   // while (true) { laptop_comm(); delay(1000); }
   setup_encoders();
