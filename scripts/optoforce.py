@@ -22,6 +22,7 @@ import serial
 from serial.tools.list_ports import comports
 import struct
 from datetime import datetime
+import time
 
 # constants
 OPTO_PARAMS = {
@@ -57,7 +58,8 @@ with open('data/raw-opto-log.csv', 'w+') as outfile, \
     opt_ser.write(payload)
 
     # writing header for csv
-    outfile.write('time [H:M:S:f],Fx [N],Fy [N],Fz [N]\n')
+    # outfile.write('time [H:M:S:f],Fx [N],Fy [N],Fz [N]\n')
+    outfile.write('time,Fx [N],Fy [N],Fz [N]\n')
 
     print("Logging - press ctrl-c to stop...")
 
@@ -65,16 +67,20 @@ with open('data/raw-opto-log.csv', 'w+') as outfile, \
     expected_header = bytes((170, 7, 8, 10))  # => b'\xaa\x07\x08\n'
 
     while True:
-        opt_ser.read_until(expected_header)
+        try:
+            opt_ser.read_until(expected_header)
 
-        # https://docs.python.org/3/library/struct.html#format-characters
-        count, status, fx, fy, fz, checksum = (
-            struct.unpack('>HHhhhH', opt_ser.read(12))
-        )
-        fx *= FX_SCALE
-        fy *= FY_SCALE
-        fz *= FZ_SCALE
-        # print(f'count={count:2}, status={status:2}, fx={fx: 8.3f} fy={fy: 8.3f} fz={fz: 8.3f}')
+            # https://docs.python.org/3/library/struct.html#format-characters
+            count, status, fx, fy, fz, checksum = (
+                struct.unpack('>HHhhhH', opt_ser.read(12))
+            )
+            fx *= FX_SCALE
+            fy *= FY_SCALE
+            fz *= FZ_SCALE
+            # print(f'count={count:2}, status={status:2}, fx={fx: 8.3f} fy={fy: 8.3f} fz={fz: 8.3f}')
 
-        t = datetime.now().strftime('%H:%M:%S:%f')
-        outfile.write(f'{t},{fx},{fy},{fz}\n')
+            # t = datetime.now().strftime('%H:%M:%S:%f')
+            # outfile.write(f'{t},{fx},{fy},{fz}\n')
+            outfile.write(f'{time.time()},{fx},{fy},{fz}\n')
+        except KeyboardInterrupt:
+            break
