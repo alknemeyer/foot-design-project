@@ -4,19 +4,19 @@
 // imu::read();
 // // -> `imu::data` is an array of 9 floats: acc xyz, gyro xyz, mag xyz
 
+#include <Wire.h>
 #include "MPU9250.h"
 
 namespace imu
 {
-	// MPU9250(TwoWire &bus,uint8_t address);
-	// MPU9250(SPIClass &bus,uint8_t csPin);
-	MPU9250 imu(Wire, 0x68);
+	// Wire1 = pins 16, 17 = scl1, sda1
+	MPU9250 imu(Wire1, 0x68);
 	int status;
 	float data[9] = {0};
 
 	void init()
 	{
-		Wire.begin();
+		Wire1.begin();
 
 		while ((status = imu.begin()) < 0)
 		{

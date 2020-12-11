@@ -22,10 +22,11 @@ namespace heightsensor
 {
 	VL53L0X sensor;
 
-	void init(uint8_t addr)
+	void init()
 	{
+		// Wire = pins 18, 19 = sda0, scl0
 		Wire.begin();
-		sensor.setAddress(addr);
+		sensor.setBus(&Wire);
 
 		while (!sensor.init())
 		{
@@ -38,10 +39,14 @@ namespace heightsensor
 		// fast as possible).  To use continuous timed mode
 		// instead, provide a desired inter-measurement period in
 		// ms (e.g. sensor.startContinuous(100)).
-		sensor.startContinuous();
+		sensor.startContinuous(/*200000*/);
 
 		// reduce timing budget to 20 ms (default is about 33 ms)
-		sensor.setMeasurementTimingBudget(20000);
+		bool valid = sensor.setMeasurementTimingBudget(20000);
+		if (!valid)
+		{
+			Serial.println("heightsensor: invalid measurement timing budget");
+		}
 	}
 
 	float calibrate_offset()

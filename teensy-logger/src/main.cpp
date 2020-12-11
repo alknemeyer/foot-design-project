@@ -14,6 +14,7 @@ unsigned long evaltime_us = 0;
 #define Laptop Serial
 const uint32_t laptop_baud = 250000;
 void sendfloat(float);
+void sendint32(int32_t);
 void sendfloats(float *, size_t);
 void wait_control_loop();
 
@@ -23,9 +24,9 @@ void setup()
 	Laptop.begin(laptop_baud);
 	Laptop.write("teensy-laptop comms working");
 
-	heightsensor::init(0x69); // address?
-	imu::init();			  // address?
-	boom::init();			  // pins?
+	heightsensor::init();
+	imu::init();
+	boom::init();
 
 	// TODO: initial state? calculate offsets? a button?
 }
@@ -44,7 +45,7 @@ void loop()
 	// delay(1000);
 
 	// data: 4 + 4 + 9*4 bytes
-	sendfloat(boom::read());
+	sendint32(boom::read());
 	sendfloat(heightsensor::read());
 	imu::read();
 	sendfloats(imu::data, 9);
@@ -60,6 +61,11 @@ void wait_control_loop()
 }
 
 void sendfloat(float data)
+{
+	Laptop.write((uint8_t *)&data, sizeof(data));
+}
+
+void sendint32(int32_t data)
 {
 	Laptop.write((uint8_t *)&data, sizeof(data));
 }
