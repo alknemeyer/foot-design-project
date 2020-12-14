@@ -39,7 +39,7 @@ namespace heightsensor
 		// fast as possible).  To use continuous timed mode
 		// instead, provide a desired inter-measurement period in
 		// ms (e.g. sensor.startContinuous(100)).
-		sensor.startContinuous(/*200000*/);
+		sensor.startContinuous();
 
 		// reduce timing budget to 20 ms (default is about 33 ms)
 		bool valid = sensor.setMeasurementTimingBudget(20000);
@@ -69,5 +69,25 @@ namespace heightsensor
 			Serial.print("heightsensor: timeout occurred");
 		}
 		return reading;
+	}
+
+	// code copied from
+	// https://github.com/pololu/vl53l0x-arduino/blob/9f3fa14a44b489774f1f520eb2a1a0968bb09ba4/VL53L0X.cpp#L817
+	// Modifed to not loop while waiting for a new reading
+	// Instead, it just reads the value in the height sensor registor even
+	// if it's the same as the previous value
+	// The advantage is that there's no delaying, so we don't mess with
+	// the control loop
+	// Detecting that we've read the same data point twice is pretty straightforward
+	// The sensor _generally_ takes just under 20ms for a reading
+	float readfast()
+	{
+		// assumptions: Linearity Corrective Gain is 1000 (default);
+		// fractional ranging is not enabled
+		uint16_t range = sensor.readReg16Bit(VL53L0X::RESULT_RANGE_STATUS + 10);
+
+		sensor.writeReg(VL53L0X::SYSTEM_INTERRUPT_CLEAR, 0x01);
+
+		return range;
 	}
 } // namespace heightsensor

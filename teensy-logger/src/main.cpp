@@ -46,7 +46,7 @@ void loop()
 
 	// data: 4 + 4 + 9*4 bytes
 	sendint32(boom::read());
-	sendfloat(heightsensor::read());
+	sendfloat(heightsensor::readfast());
 	imu::read();
 	sendfloats(imu::data, 9);
 	wait_control_loop();
