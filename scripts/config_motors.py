@@ -64,8 +64,11 @@ def config_motor(ax: 'odrive.Axis'):
 
     # set startup sequence
     # see https://docs.odriverobotics.com/api/odrive.axis.axisstate
+    # despite not using the encoder's index channel, turning
+    # off encoder index search made the ODrive not recognize the
+    # encoders. Not sure why!
     ax.config.startup_motor_calibration = False
-    ax.config.startup_encoder_index_search = False
+    ax.config.startup_encoder_index_search = True#False
     ax.config.startup_encoder_offset_calibration = False
     ax.config.startup_closed_loop_control = False
     ax.config.startup_sensorless_control = False
