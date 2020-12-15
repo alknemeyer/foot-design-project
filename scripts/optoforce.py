@@ -22,6 +22,7 @@ import serial
 from serial.tools.list_ports import comports
 import struct
 import time
+from datetime import datetime
 
 # constants
 OPTO_PARAMS = {
@@ -44,7 +45,7 @@ else:
     raise RuntimeError(f"Couldn't find the optoforce! Got: {ports}")
 
 print('Connecting to optoforce...')
-with open('data/raw-opto-log.csv', 'w+') as outfile, \
+with open(f'data/raw-opto-log-{datetime.now().strftime("%H-%M-%S")}.csv', 'w+') as outfile, \
         serial.Serial(dev.device, **OPTO_PARAMS) as opt_ser:
 
     print('Writing optoforce setup code...')

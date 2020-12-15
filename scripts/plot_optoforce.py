@@ -36,7 +36,7 @@ def convert(s: bytes):
 arr: np.ndarray = np.loadtxt(
     args.inputfilename, delimiter=',',
     skiprows=1, usecols=[0, 1, 2, 3],
-    converters={0: convert},
+    # converters={0: convert},
 )
 
 # arr = arr[12_000:28_000, :]
