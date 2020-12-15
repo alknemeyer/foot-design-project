@@ -38,7 +38,7 @@ def controllooptimes(nloops: int = 10_000, odrv: Optional['ODrive'] = None):
 
     # random initial float
     th_ul = th_ur = dth_ul = dth_ur = kp = kd = 0.1
-    r, th, dr, dth = foot_state_polar(th_ul, th_ur, dth_ul, dth_ur)
+    r, th, dr, dth = foot_state_polar(th_ul, th_ur, dth_ul, dth_ur, lib.l3x, lib.l3y)
 
     ddr_controller = lib.PDControl(r, dr, kp, kd)
     ddth_controller = lib.PDControl(th, dth, kp, kd)
@@ -49,14 +49,14 @@ def controllooptimes(nloops: int = 10_000, odrv: Optional['ODrive'] = None):
         if odrv is not None:
             th_ul, th_ur, dth_ul, dth_ur = lib.upper_leg_angles(odrv)
 
-        r, th, dr, dth = foot_state_polar(th_ul, th_ur, dth_ul, dth_ur)
+        r, th, dr, dth = foot_state_polar(th_ul, th_ur, dth_ul, dth_ur, lib.l3x, lib.l3y)
 
         # inputs: ddr_setpoint, ddth_setpoint
         curr0, curr1 = impedance_control(
             ddr_setpoint=ddr_controller(r, dr),
             ddth_setpoint=ddth_controller(th, dth),
             th_ul=th_ul, th_ur=th_ur, dth_ul=dth_ul, dth_ur=dth_ur,
-            L_x=0, L_y=0, Kt=lib.torque_constant,
+            L_x=0, L_y=0, l3x=lib.l3x, l3y=lib.l3y, Kt=lib.torque_constant,
         )
 
         if odrv is not None:
@@ -81,7 +81,7 @@ def slow_position_control(odrv: 'ODrive', vel_limit: float = 180):
 
     with PositionControl(odrv):
         lib.fast_gains(odrv)
-        for x, y in ((0, -0.4), (0.2, -0.2), (-0.2, -0.2), (0, -0.2)):
+        for x, y in ((0, -lib.max_length), (0.2, -0.2), (-0.2, -0.2), (0, -0.2)):
             th0, th1 = lib.foot_xy_to_th_deg(x_m=x, y_m=y)
             print(f'changing to: {th0=} {th1=} {x=} {y=}')
             setangle(th0, motornum=0)

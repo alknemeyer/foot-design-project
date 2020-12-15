@@ -29,6 +29,8 @@ l2: float = 0.250
 l3x: float = 0.0
 l3y: float = 0.0
 
+max_length = l1 + l2 - 0.0075
+
 mu: float = 0.090  # roughly correct
 ml: float = 0.090  # short
 # m_otherone: float = 0.096  # long
@@ -239,14 +241,14 @@ def nearest_cpr(curr: float, dest: float) -> float:
 #=#=#=#=#=#=#=#=# ZEROING MOTORS #=#=#=#=#=#=#=#=#
 
 # first approximation -- do it using index
-th0, th1 = foot_xy_to_th_deg(x_m=0.417, y_m=0)
-almost_zero_deg = (-853.765625, -1489.765625)  # TODO: update!
-ZERO_DEG_POS = (
-    almost_zero_deg[0] - r_dir(leg_angle_deg_to_encoder_count(th0)),
-    almost_zero_deg[1] - l_dir(leg_angle_deg_to_encoder_count(th1)),
-)
-del th0, th1, almost_zero_deg
-
+# th0, th1 = foot_xy_to_th_deg(x_m=0.38, y_m=0)
+# almost_zero_deg = (-853.765625, -1489.765625)  # TODO: update!
+# ZERO_DEG_POS = (
+#     almost_zero_deg[0] - r_dir(leg_angle_deg_to_encoder_count(th0)),
+#     almost_zero_deg[1] - l_dir(leg_angle_deg_to_encoder_count(th1)),
+# )
+# del th0, th1, almost_zero_deg
+ZERO_DEG_POS = []
 
 def zero_motors_no_index_straightdown(odrv0: 'ODrive'):
     almost_straight_down = (
@@ -254,7 +256,7 @@ def zero_motors_no_index_straightdown(odrv0: 'ODrive'):
         odrv0.axis1.encoder.pos_estimate,
     )
     # zero deg = right
-    th0, th1 = foot_xy_to_th_deg(x_m=0, y_m=-0.417)
+    th0, th1 = foot_xy_to_th_deg(x_m=0, y_m=-max_length)
     global ZERO_DEG_POS
     ZERO_DEG_POS = (
         almost_straight_down[0] - r_dir(leg_angle_deg_to_encoder_count(th0)),
