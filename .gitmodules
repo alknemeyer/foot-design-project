@@ -4,3 +4,6 @@
 [submodule "typesieve"]
 	path = typesieve
 	url = https://github.com/alknemeyer/typesieve
+[submodule "sensor-logger"]
+	path = sensor-logger
+	url = https://github.com/African-Robotics-Unit/sensor-logger
