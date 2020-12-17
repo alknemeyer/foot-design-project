@@ -24,6 +24,7 @@ from fibre.protocol import ChannelBrokenException
 
 cpr = 4*500
 
+
 def config_motor(ax: 'odrive.Axis'):
     # current limit in [A]
     ax.motor.config.current_lim = 15  # not sure!
@@ -68,7 +69,7 @@ def config_motor(ax: 'odrive.Axis'):
     # off encoder index search made the ODrive not recognize the
     # encoders. Not sure why!
     ax.config.startup_motor_calibration = False
-    ax.config.startup_encoder_index_search = True#False
+    ax.config.startup_encoder_index_search = True  # False
     ax.config.startup_encoder_offset_calibration = False
     ax.config.startup_closed_loop_control = False
     ax.config.startup_sensorless_control = False

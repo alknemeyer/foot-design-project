@@ -8,37 +8,62 @@ if TYPE_CHECKING:
 
 
 def increment(odrv: 'ODrive', nloops: int = 3, delta: float = 100):
-    """delta > 0 to push off ground, delta < 0 to go lower"""
+    """
+    Increment the angle of each motor `nloops` times, each time
+    by `delta`, so that they move a small amount in opposite
+    directions (ie either closer or further apart)
+    """
     with PositionControl(odrv):
         lib.fast_gains(odrv)
         for _ in range(nloops):
             odrv.axis0.controller.pos_setpoint -= delta
             odrv.axis1.controller.pos_setpoint += delta
+            print('Incremented angle')
             time.sleep(1)
-            print('.'*50)
 
 
 def slipping(odrv: 'ODrive'):
-    def pos(ax): return ax.encoder.pos_estimate
+    """
+    Test for slipping in the encoder. Setup: straighten the
+    leg as much as possible (or otherwise fix it so that the
+    relative angle between the motors is constant) and then
+    rotate the leg a full circle
 
-    ip0, ip1 = pos(odrv.axis0), pos(odrv.axis1)
-    idiff = ip0 - ip1
+    Each position should meausure the correct encoder count
+    (4000 at the time of writing) and the difference should
+    stay "relatively close" to zero. A bit of drift is fine
+    (at the time of writing, it can be around +- 20, likely
+    due to some wiggle/loose coupling/stretch etc)
+    """
+    def pos(ax):
+        return ax.encoder.pos_estimate
 
+    # initial encoder position
+    initial_p0, initial_p1 = pos(odrv.axis0), pos(odrv.axis1)
+
+    print('angle 0, angle 1, difference')
     while True:
         try:
-            p0, p1 = pos(odrv.axis0), pos(odrv.axis1)
-            print(f'{p0-ip0:7.3f}, {p1-ip1:7.3f}, {p0-p1-idiff:7.3f}')
+            p0 = pos(odrv.axis0) - initial_p0
+            p1 = pos(odrv.axis1) - initial_p1
+            print(f'{p0:7.3f}, {p1:7.3f}, {p0-p1:7.3f}')
             time.sleep(1)
         except KeyboardInterrupt:
             break
 
 
 def controllooptimes(nloops: int = 10_000, odrv: Optional['ODrive'] = None):
+    """
+    Estimate control loop times
+    """
     from .controller_generated import impedance_control, foot_state_polar
+    import numpy as np
 
-    # random initial float
-    th_ul = th_ur = dth_ul = dth_ur = kp = kd = 0.1
-    r, th, dr, dth = foot_state_polar(th_ul, th_ur, dth_ul, dth_ur, lib.l3x, lib.l3y)
+    # random initial values
+    th_ul, th_ur, dth_ul, dth_ur, kp, kd = (.1, .2, .3, .4, .5, .6)
+
+    r, th, dr, dth = foot_state_polar(
+        th_ul, th_ur, dth_ul, dth_ur, lib.l3x, lib.l3y)
 
     ddr_controller = lib.PDControl(r, dr, kp, kd)
     ddth_controller = lib.PDControl(th, dth, kp, kd)
@@ -49,7 +74,8 @@ def controllooptimes(nloops: int = 10_000, odrv: Optional['ODrive'] = None):
         if odrv is not None:
             th_ul, th_ur, dth_ul, dth_ur = lib.upper_leg_angles(odrv)
 
-        r, th, dr, dth = foot_state_polar(th_ul, th_ur, dth_ul, dth_ur, lib.l3x, lib.l3y)
+        r, th, dr, dth = foot_state_polar(
+            th_ul, th_ur, dth_ul, dth_ur, lib.l3x, lib.l3y)
 
         # inputs: ddr_setpoint, ddth_setpoint
         curr0, curr1 = impedance_control(
@@ -65,17 +91,21 @@ def controllooptimes(nloops: int = 10_000, odrv: Optional['ODrive'] = None):
         looptimes.append(time.time())
 
     runtime = time.time() - tstart
-    print('average loop time:', 1000*runtime/nloops, 'ms')
+    print(f'average loop time: {1000*runtime/nloops:.3f} ms')
 
     import matplotlib.pyplot as plt
-    import numpy as np
     plt.style.use('seaborn')
     plt.plot(np.diff(np.array(looptimes)) * 1000)
-    plt.title(f'loop times in milliseconds. HIL: {odrv is not None}')
+    plt.title(f'loop times in milliseconds. Using ODrive: {odrv is not None}')
     plt.show()
 
 
 def slow_position_control(odrv: 'ODrive', vel_limit: float = 180):
+    """
+    Check that a slow position control works by moving the foot
+    to a few positions while under a velocity limit (see Trajectory
+    Control in the ODrive docs)
+    """
     from functools import partial
     setangle = partial(lib.set_to_nearest_angle, odrv, vel_limit=vel_limit)
 

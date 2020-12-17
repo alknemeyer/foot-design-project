@@ -29,11 +29,15 @@ l2: float = 0.250
 l3x: float = 0.0
 l3y: float = 0.0
 
+# subtract a bit in case we get things wrong, and the leg
+# tries to extend beyond what's possible, resulting in the
+# links pressing against each other while the motors fight
+# it out
 max_length = l1 + l2 - 0.0075
 
+# mass of upper and lower legs, and of the body
 mu: float = 0.090  # roughly correct
 ml: float = 0.090  # short
-# m_otherone: float = 0.096  # long
 mb: float = 4.460 - 2*mu - 2*ml
 
 encoder_cpr: int = 4*500
@@ -334,7 +338,7 @@ class PDControl:
         dx0 = self.dx0
         return kp * (x0 - x) + kd * (dx0 - dx)
 
-# unsure of this until I know kt is good
+# unsure of this until we know kt is good
 # def set_torque(odrv: 'ODrive', motor0: float, motor1: float):
 #     kt = torque_constant
 #     set_current(odrv, motor0*kt, motor1*kt)

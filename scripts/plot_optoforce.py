@@ -27,13 +27,13 @@ parser.add_argument('-e', '--end', type=int, default=-1,
 args = parser.parse_args()
 
 
-def convert(s: bytes):
-    "example s: 11:18:35:271027"
-    hr, min, sec, ms = str(s, 'utf-8').split(':')
-    return float(int(min)*60 + int(sec) + int(ms)/1000_000)
+# def convert(s: bytes):
+#     "example s: 11:18:35:271027"
+#     hr, min, sec, ms = str(s, 'utf-8').split(':')
+#     return float(int(min)*60 + int(sec) + int(ms)/1000_000)
 
 
-arr: np.ndarray = np.loadtxt(
+arr: np.ndarray = np.loadtxt(  # type: ignore
     args.inputfilename, delimiter=',',
     skiprows=1, usecols=[0, 1, 2, 3],
     # converters={0: convert},
@@ -56,7 +56,8 @@ if args.animate is False:
 
 else:
     from matplotlib.animation import FuncAnimation
-    fig, ax = plt.subplots(dpi=240)
+    fig = plt.figure(dpi=240)
+    ax = plt.subplot()
     fig.set_size_inches(4/1.3, 5/1.3)
     plt.tight_layout(rect=(0.07, 0.02, 1, 0.98))
     linex, = ax.plot([], [])

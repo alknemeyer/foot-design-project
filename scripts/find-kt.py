@@ -1,13 +1,49 @@
-#%%
-import time, odrive, numpy as np
+"""
+Code to find the torque constant Kt of the motors.
+If you can find this by documentation -- great! No need
+for this!
+
+_Otherwise_, the setup is as follows:
+
+1. remove the two segments of the leg which connect to
+   form a foot
+
+     | axle |
+       //\\
+      //  \\
+     //    \\
+     \\    //
+      \\  //  <-- remove these links
+       \\//
+
+2. place the force sensor (or even a scale) under one
+   of the remaining upper links, so that a (positive)
+   input current results in a measureable force:
+
+     | axle |
+       //\\
+      //  \\
+     //    \\
+          -----  <-- force/weight measurement device
+
+   Be careful with units! Eg. "measuring mass" (kg)
+   vs force vs torque! There may be a bug in this
+   script!
+
+3. follow the instructions below. Run the commands
+   in this file by copy-pasting them into an IPython
+   terminal block-by-block
+"""
+import time
+import odrive
+import numpy as np
 import lib
 odrv0 = odrive.find_any()
-assert odrv0 is not None, "Couldn't find the odrive"
 
-#%%
-# in another cell, run:
+# in another terminal, run:
 # >>> python -m optoforce -f data/raw-opto-log.csv
-# then while that's running:
+# or just look at the reading on the scale.
+# Then while that's running:
 with lib.CurrentControl(odrv0):
     for i in [0.5, 1.0, 2.0, 3.0, 4.0, 5.0]:
         print(f'current = {i} [A]')
@@ -18,7 +54,7 @@ with lib.CurrentControl(odrv0):
 # >>> python scripts/plot_optoforce.py
 # and read off data points
 
-#%% resulting data:
+# the resulting data:
 # input current, sensor reading (N)
 data = np.array([
     [0., -91.1],
