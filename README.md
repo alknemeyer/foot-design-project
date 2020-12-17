@@ -1,25 +1,102 @@
 # Foot Design Project
 
-<!-- source-conda && conda activate foot-design && odrivetool -->
+_Code for the hopper being used to test foot designs_
 
-## Quick doc links:
-* [ODrive getting started documentation](https://docs.odriverobotics.com/)
-* [ascii-protocol](https://docs.odriverobotics.com/ascii-protocol.html)
-* [ODriveArduino.cpp](https://github.com/madcowswe/ODrive/blob/master/Arduino/ODriveArduino/ODriveArduino.cpp)
+This project was developed by [Alexander Knemeyer](https://github.com/alknemeyer) on a laptop running PopOS (_basically_ Ubuntu). I can't think of a reason why the project wouldn't work under Windows/MacOS, though the commands were all written with Linux in mind. Please don't hesitate to ask me questions!
+
+
+## The robot
+
+### Equipment used
+
+<center>
+
+| Item             | Name                                                                |
+| ---------------- | ------------------------------------------------------------------- |
+| Motor controller | [ODrive](https://odriverobotics.com/)                               |
+| Motor x2         | [T-motor U-10 80rpm/V](http://store-en.tmotor.com/goods.php?id=362) |
+| Motor encoder x2 | [HEDL-5640-A13](https://www.mouser.co.za/ProductDetail/Broadcom-Avago/HEDL-5640A13?qs=RuhU64sK2%252Bv3nPu5sOD%2FhQ==) |
+| Force sensor     | [OptoForce OMD-45-FH-2000N](http://schlu.com/pdf/Optoforce_Sensore_di_forza_3D_OMD-45-FH-2000N_1.5_EN.pdf) |
+| Sensor logger    | [Parts list](https://github.com/African-Robotics-Unit/sensor-logger)|
+
+</center>
+
+
+### Wiring things together
+
+The general setup is:
+| | | Connection type |
+|-|-|----------------:|
+| laptop | sensor logger | USB cable |
+| laptop | ODrive | USB cable |
+| ODrive | motor encoders | Premade connectors. See below |
+| ODrive | motors | Three thick wires for each motor |
+| ODrive "AUX" port | 10 Ohm shunt resistor | Short thick wires |
+| laptop | OptoForce | USB connection |
+
+I can't remember how to do the calculation for the required resistance/power, unfortunately!
+
+The motor encoders have pins as follows:
+
+<center>
+
+| pin | type   | | pin | type |
+|-----|--------|-|-----|------|
+| 1   | NC     | | 2   | +5V  |
+| 3   | GND    | | 4   | NC   |
+| 5   | not(A) | | 6   | A    |
+| 7   | not(B) | | 8   | B    |
+| 9   | not(I) | | 10  | I    |
+
+</center>
+
+where NC = No Connection, and I = Index = Z
+
+When looking at the connector, they correspond to the diagram below, where crosses over numbers indicates pins which aren't connected:
+
+<p align="center">
+<img src="diagrams/motor-encoder-wiring.jpeg" alt="motor encoder wiring diagram" width="200"/>
+</p>
+
+Now, the connection works as follows:
+
+<img src="diagrams/motor-encoder-odrive-wiring.jpeg" alt="photo of connection between motor encoder and ODrive" width="400" style="display:block; margin:auto;"/>
+
+Note that the second line from the left (ground, as shown by the hand-drawn diagram) crosses over the lines and ends up at the ground pin of the ODrive. When looking at the robot from the front, the left motor is motor 0 (M0)
+
+There seemed to be noise on the encoder index lines, causing the encoders to "reset" randomly. Capacitors were added (not shown in the diagram) but the index lines are still not working properly
+
 
 ## Software environment setup
 
+### Download this repo
+Clone this repo, and make sure to download the submodules too:
+
+    $ git clone --recurse-submodules https://github.com/alknemeyer/foot-design-project
+
+
 ### Python
-Install conda or miniconda, then either install dependancies as you want:
+Install conda or miniconda, then either install dependancies manually:
 
 ```bash
+# create a virtual environment named "foot-design" using
+# conda, and activate it
 $ conda create --name foot-design
 $ conda activate foot-design
-$ conda install jupyterlab sympy
-$ conda install -c conda-forge cyipopt  # get ipopt installed the easy way
+
+# install the main dependancies
+$ conda install jupyterlab matplotlib serial sympy
+
+# some dependancies aren't available via conda
+# install those via pip:
 $ conda install pip
-$ python -m pip install odrive physical-education==0.1.2 pyomo
 $ python -m pip install --upgrade https://github.com/alknemeyer/optoforce/tarball/main
+
+# IF you want to do trajectory optimisation,
+# install the following:
+$ python -m pip install odrive physical-education==0.1.2 pyomo
+$ conda install -c conda-forge cyipopt  # get ipopt the easy way
+
 # there might be more install instructions for your
 # particular OS: https://docs.odriverobotics.com/
 # eg. on ubuntu, I have to install "udev rules"
@@ -33,183 +110,47 @@ $ odrivetool
 # "[stuff] was never awaited", but after ~10 seconds you
 # should see something like:
 # "Connected to ODrive 20603595524B as odrv0"
-# in cyan text. If so -- great!
-# you'll start every session by activating your conda env
-# and then entering `odrivetool`
-```
-or start from a conda `environment.yaml` file:
-```bash
-conda env create --file=environment.yaml
-```
-(if you want to create an environment file with eg. new or updated dependancies: `conda env export > environment.yml`)
-
-If using vs code, you'll need to update the `""python.pythonPath"` setting in `.vscode/settings.json` to your actual virtual environment
-
-### Arduino
-Next up, we need to install arduino and patch it to run teensy code. Follow the instructions on the [teensy website](https://www.pjrc.com/teensy/td_download.html). If you're running linux, there is a ridiculously simple install process under the heading "Command Line Install" (you can skip the last two lines about changing directory and running `make`). I put all those files in a folder called `Arduino`. If you're using vs code, you'll need to update the `includePath` in `.vscode/c_cpp_properties.json`
-
-Next up, test that that worked:
-1. plug in the teensy
-2. launch arduino
-3. Tools > board > Teensyduino > Teensy 4.0
-4. File > Examples > 0.1.Basics > Blink
-5. Click "Upload"
-
-If you can modify the sketch to various blink rates and upload it, you're almost done!
-
-I also install the arduino extension from Microsoft, which can be installed quickly by launching VS Code Quick Open (Ctrl + P), typing `ext install vscode-arduino`, and then pressing enter.
-
-Finally, install ODrive arduino as an arduino library, as described on their [github page](https://github.com/madcowswe/ODrive/tree/devel/Arduino/ODriveArduino). To get the files, you'll need to clone their repository:
-
-```bash
-$ git clone https://github.com/madcowswe/ODrive.git
+# in cyan text. If so -- great! You're connected to the odrive
 ```
 
-Afterwards, open [./controller/hopper_code.ino](./controller/hopper_code.ino) and click `upload`. If you get an error saying something like `fatal error: ODriveArduino.h: No such file or directory`, then you didn't install the ODrive arduino library properly
+OR start from a conda `environment.yml` file, which will install the exact same versions of dependancies under a virtual environment named `foot-design`:
+
+    $ conda env create --file=environment.yml
+
+If you want to create an environment file to document eg. new or updated dependancies, run
+
+    $ conda env export > environment.yml
+
+If using vs code, you'll need to update the `""python.pythonPath"` setting in `.vscode/settings.json` to your actual virtual environment, or click on a notification if it pops up
+
 
 ### ODrive
+You have a choice now - you can keep the software + firmware versions that are being used at the time of writing (ODrive Python library + firmware version 0.4.12) or upgrade to a new version. My feeling is that it's better to use the latest version since that's what the docs reflect, what people on forums will most readily help with, and _probably_ most bug-free. See the instructions on the ODrive website
 
-You have a choice now - you can keep the software + firmware versions that are being used at the time of writing (odrive python library + firmware version 0.4.12) or upgrade to a new version. My feeling is that it's better to use the latest version since that's what the docs reflect, what people on forums will most readily help with, and _possibly_ most bug-free
+Tip: if using Ubuntu, you might need to run `odrivetool dfu` with `sudo`! You'll know if you get a bug about `ValueError: The device has no langid`
 
-Might need to run `odrivetool dfu` with `sudo`! You'll know if you get a bug about `ValueError: The device has no langid`
+Moving on: you'll also need to configure and calibrate the motors. Plug them in before running the code in `scripts/config_motors.py`. Do so by either copy-pasting the code into the `odrivetool` REPL, or by just running:
 
+    $ python scripts/config_motors.py
 
-## The robot
+The values in the script come from the from T-motor link above.
 
-### Equipment used
-
-| Item             | Name                                                                |
-| ---------------- | ------------------------------------------------------------------- |
-| Microcontroller  | [teensy 4.0](https://www.pjrc.com/store/teensy40.html)              |
-| Motor controller | [ODrive](https://odriverobotics.com/)                               |
-| Motor x2         | [T-motor U-10 80rpm/V](http://store-en.tmotor.com/goods.php?id=362) |
-| Motor encoder x2 | [HEDL-5640-A13](https://www.mouser.co.za/ProductDetail/Broadcom-Avago/HEDL-5640A13?qs=RuhU64sK2%252Bv3nPu5sOD%2FhQ==) |
-| Force sensor     | [OptoForce OMD-45-FH-2000N](http://schlu.com/pdf/Optoforce_Sensore_di_forza_3D_OMD-45-FH-2000N_1.5_EN.pdf) |
-<!-- | Encoder          | [E6B2-CWZ3E](https://www.ia.omron.com/data_pdf/cat/e6b2-c_ds_e_6_1_csm491.pdf) | -->
-
-### Wiring things together
-
-The general setup is:
-* laptop <-> teensy via USB connection
-* teensy <-> ODrive via two Rx/Tx wires [%]
-* ODrive <-> motor encoders via premade connectors. See below
-* ODrive <-> motors. Each motor has three thick wires which must be directly connected to the ODrive
-* ODrive <-> shunt resistor, plugged into ODrive "AUX" port. I can't remember how to do the calculation for the required resistance/power, unfortunately!
-* laptop <-> OptoForce via USB connection
-<!-- * teensy <-> yaw/pitch encoder via four A/B encoder wires, passing through a logic level converter [%] (not used while on vertical rail -- only boom) -->
-
-[%] = see [./controller/hopper_code.ino](./controller/hopper_code.ino) for pin numbers. I don't want to document them here and then have things go out of sync
-
-#### ODrive <-> motor encoders
-The encoder has pins as follows:
-
-| pin | type   | | pin | type |
-|-----|--------|-|-----|------|
-| 1   | NC     | | 2   | +5V  |
-| 3   | GND    | | 4   | NC   |
-| 5   | not(A) | | 6   | A    |
-| 7   | not(B) | | 8   | B    |
-| 9   | not(I) | | 10  | I    |
-
-where NC = No Connection, and I = Index = Z
-
-When looking at the connector, they correspond to the diagram below, where crosses over numbers indicates pins which aren't connected:
-
-<img src="diagrams/motor-encoder-wiring.jpeg" alt="motor encoder wiring diagram" width="200" style="display:block; margin:auto;"/>
-
-_Fig. 1_
-
-Now, the connection works as follows:
-
-<img src="diagrams/motor-encoder-odrive-wiring.jpeg" alt="photo of connection between motor encoder and ODrive" width="400" style="display:block; margin:auto;"/>
-
-_Fig. 2_
-
-Note that the second line from the left (ground, as shown by Fig. 1) crosses over the lines and ends up at the ground pin of the ODrive. When looking at the robot from the front, the left motor is motor 0 (M0)
-
-<!-- #### Setting up encoder
-
-| Wire   | Function            |
-| ------ | ------------------- |
-| Brown  | Input power (5-12V) |
-| Black  | Phase A output      |
-| White  | Phase B output      |
-| Orange | Phase Z output      |
-| Blue   | 0V                  |
-| Shield | GND                 | -->
-
-### Setting up parameters with python:
-Values from T-motor link above. Plug in the motors before running the code in `scripts/config_motors.py`. Do by either copy-pasting the code into the `odrivetool` REPL, or just by running:
-
-```bash
-$ python scripts/config_motors.py
-```
-
-N.B: the script should be re-run if you change power supply! For example, from bench power supply (for testing) to 10kW supply
+N.B: the script should be re-run if you change the power supply! For example, from bench power supply (for testing) to 10kW supply
 
 
-### Live plotting
-It may be useful to live plot the setpoint vs motor output. Do so using,
-```python
-start_liveplotter(lambda:[odrv0.axis0.encoder.pos_estimate,
-                          odrv0.axis0.controller.pos_setpoint,
-                          odrv0.axis1.encoder.pos_estimate,
-                          odrv0.axis1.controller.pos_setpoint])
-```
-You don't need to run that in a new terminal or anything - it runs in the background. Press enter if you don't see the `In [x] :` prompt
+### Sensor logger
+It's probably a good idea to re-flash the sensor logger firmware before you use it (just in case someone else has messed with it). However, if the same firmware is still uploaded, it should just work as is. It can be imported an used as a module (eg. see `controller.py`) or run as main to just log to a file:
 
-### [Tuning](https://docs.odriverobotics.com/control.html#Tuning)
+    $ python sensor_logger/scripts/receive_comms.py
 
-Run the following code by copy-pasting it into the `odrivetool` REPL, line by line:
+It should also make a plot of the data
 
-```python
-# set ax to odrv0.axis0 or axis1
-ax = odrv0.axis0
-# ax = odrv0.axis1
 
-ax.requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE
-# wait...
-ax.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
-# use ax.requested_state = AXIS_STATE_IDLE to stop vibrating etc
+## Control
+~~This is where will start to go wrong.~~ I'm sure you'll do great!
 
-# defaults
-ax.controller.config.pos_gain = 20.0 # [(counts/s) / counts]
-ax.controller.config.vel_gain = 5.0 / 10000.0 # [A/(counts/s)]
-ax.controller.config.vel_integrator_gain = 10.0 / 10000.0 # [A/((counts/s) * s)]
+Doing a suuuper simple control PD current controller, we get control loop times of around 1.5ms (bearing in mind this is python)
 
-ax.controller.config.vel_integrator_gain = 0
+If that time is dominated by ODrive stuff (eg blocking comms), then there isn't much we can do. Otherwise, if it's from the python side, we can experiment with using a different python implementation (like pypy). But no use it in stressing about it until it becomes a problem
 
-# increase vel_gain until it's unstable, then request idle state
-ax.controller.config.vel_gain = 8.0 / 10000.0   # vibrates at 16.0
-
-# increase pos_gain until it's unstable, then bring back to smoothness
-ax.controller.config.pos_gain = 80.0     # should be 120.0
-
-# integrator gain
-def set_int_gain(bandwidth_hz):
-    ax = odrv0.axis0
-    vel_gain = ax.controller.config.vel_gain
-    ax.controller.config.vel_integrator_gain = 0.5 * bandwidth_hz * vel_gain
-
-set_int_gain(10)
-
-odrv0.save_configuration()
-odrv0.reboot()
-```
-
-### Optional nicer print for `odrv0.reboot()`:
-```python
-from fibre.protocol import ChannelBrokenException
-try:
-    odrv0.reboot()
-except ChannelBrokenException:
-    print('Lost connection because of reboot')
-```
-
-### Tip for debugging:
-From the [ODrive troubleshooting](https://docs.odriverobotics.com/troubleshooting) page:
-
-```python
->>> dump_errors(odrv0)       # show errors
->>> dump_errors(odrv0, True) # show errors and then clear em
-```
+I inserted pauses, and it seems loop times of 10/15ms can become unstable
