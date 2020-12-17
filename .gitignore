@@ -1,12 +1,4 @@
 Optoforce/
-attic/
-
-data/raw-opto-log.csv
-data/jump-ball-foot.csv
-data/force-animation.mp4
-data/increasing-hop-height.png
-data/increasing-hop-height.MOV
-data/leg-data.csv
 
 scripts/controller_generated.py
 
